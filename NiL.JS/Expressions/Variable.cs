@@ -80,7 +80,7 @@ namespace NiL.JS.Expressions
                 {
                     if ((_codeContext & CodeContext.InEval) != 0)
                     {
-                        ExceptionHelper.ThrowVariableIsNotDefined(_variableName, this);
+                        ExceptionHelper.ThrowVariableIsNotDefined(_variableName, "", Position, Length, this);
                     }
                     else
                     {
@@ -113,7 +113,7 @@ namespace NiL.JS.Expressions
                         {
                             if ((_codeContext & CodeContext.InEval) != 0)
                             {
-                                ExceptionHelper.ThrowVariableIsNotDefined(_variableName, this);
+                                ExceptionHelper.ThrowVariableIsNotDefined(_variableName, "", Position, Length, this);
                             }
                             else
                             {

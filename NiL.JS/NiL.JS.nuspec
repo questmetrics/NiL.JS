@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>NiL.JS</id>
-    <version>2.5.1220.0</version>
+    <version>2.5.1230.0</version>
     <title>NiL.JS Engine</title>
     <authors>NiLProject</authors>
     <owners>NiLProject</owners>

@@ -435,7 +435,6 @@
     <None Include="keys.snk" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="build.cmd" />
     <Content Include="NiL.JS.nuspec" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

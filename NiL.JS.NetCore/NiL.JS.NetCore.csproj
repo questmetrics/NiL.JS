@@ -37,8 +37,8 @@
     <PackageReference Include="System.Runtime" Version="4.1.0" />
   </ItemGroup>
 
-  <Target Name="PrecompileScript" BeforeTargets="BeforeBuild">
+  <!--<Target Name="PrecompileScript" BeforeTargets="BeforeBuild">
     <Exec Command="makeSymLinks.bat" />
-  </Target>
+  </Target>-->
 
 </Project>

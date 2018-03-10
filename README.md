@@ -18,3 +18,4 @@ Licensed under BSD 3-Clause License.
 
 > [NuGet Package for .NET 4, .NET 4.5 and UWP](https://www.nuget.org/packages/NiL.JS)  
 > [NuGet Package for .NET Core](https://www.nuget.org/packages/NiL.JS.NetCore/)  
+

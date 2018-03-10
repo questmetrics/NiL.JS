@@ -1,7 +1,9 @@
 
 NiL.JS
 ======
-    
+
+[![questmetrics-public MyGet Build Status](https://www.myget.org/BuildSource/Badge/questmetrics-public?identifier=2174c504-9a24-42e5-baed-943adad74866)](https://www.myget.org/)
+
 Open source ECMAScript 6.0 (ES2015) (JavaScript) engine.
 Licensed under BSD 3-Clause License.
 

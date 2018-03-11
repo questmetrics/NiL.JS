@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
-    <id>QuestMetrics.NiL.JS</id>
-    <version>2.5.1230.0</version>
+    <id>QuestMetrics.NiL.JS.NetCore</id>
+    <version>2.5.2000.0</version>
     <title>NiL.JS Engine</title>
     <authors>NiLProject</authors>
     <owners>NiLProject</owners>

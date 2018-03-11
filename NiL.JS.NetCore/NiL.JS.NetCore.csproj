@@ -31,6 +31,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="NiL.JS.NetCore.nuspec" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="NiL.JS.NetCore.nuspec" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="System.Dynamic.Runtime" Version="4.0.11" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.1.0" />
     <PackageReference Include="System.Resources.ResourceManager" Version="4.0.1" />

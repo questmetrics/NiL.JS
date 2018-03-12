@@ -31,11 +31,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="NiL.JS.NetCore.nuspec" />
+    <None Remove="NiL.JS.nuspec" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="NiL.JS.NetCore.nuspec" />
+    <Content Include="NiL.JS.nuspec" />
   </ItemGroup>
 
   <ItemGroup>

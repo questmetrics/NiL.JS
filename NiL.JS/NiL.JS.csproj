@@ -214,6 +214,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseLibrary\Date.new.cs" />
+    <Compile Include="BaseLibrary\DateParser.cs" />
     <Compile Include="BaseLibrary\GeneratorFunction.cs" />
     <Compile Include="BaseLibrary\GlobalFunctions.cs" />
     <Compile Include="BaseLibrary\Set.cs" />
@@ -277,7 +279,6 @@
     <Compile Include="Core\StringMap.cs" />
     <Compile Include="Core\Interop\AllowNullArgumentsAttribute.cs" />
     <Compile Include="Core\Interop\CustomType.cs" />
-    <Compile Include="BaseLibrary\Date.cs" />
     <Compile Include="BaseLibrary\RegExp.cs" />
     <Compile Include="BaseLibrary\URIError.cs" />
     <Compile Include="BaseLibrary\SyntaxError.cs" />
@@ -435,7 +436,9 @@
     <None Include="keys.snk" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="NiL.JS.nuspec" />
+    <Content Include="NiL.JS.nuspec">
+      <SubType>Designer</SubType>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.

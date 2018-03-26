@@ -1176,6 +1176,7 @@ namespace NiL.JS.Core
         {
             if (_valueType == JSValueType.Date)
                 return (_oValue as Date).ToDateTime();
+            //return (_oValue as Date).Value;
             throw new InvalidCastException();
         }
 

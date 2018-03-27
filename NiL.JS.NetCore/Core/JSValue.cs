@@ -1175,7 +1175,7 @@ namespace NiL.JS.Core
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
             if (_valueType == JSValueType.Date)
-                return (_oValue as Date).ToDateTime();
+                return (_oValue as Date).Value;
             //return (_oValue as Date).Value;
             throw new InvalidCastException();
         }

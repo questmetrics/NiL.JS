@@ -11,7 +11,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>NiL.JS</RootNamespace>
     <AssemblyName>NiL.JS</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <BaseIntermediateOutputPath>obj\$(TargetFrameworkVersion)\</BaseIntermediateOutputPath>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>
@@ -214,8 +214,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BaseLibrary\Date.new.cs" />
-    <Compile Include="BaseLibrary\DateParser.cs" />
+    <Compile Include="BaseLibrary\Date.cs" />
     <Compile Include="BaseLibrary\GeneratorFunction.cs" />
     <Compile Include="BaseLibrary\GlobalFunctions.cs" />
     <Compile Include="BaseLibrary\Set.cs" />

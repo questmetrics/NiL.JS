@@ -6,9 +6,9 @@
     <title>NiL.JS Engine</title>
     <authors>NiLProject</authors>
     <owners>NiLProject</owners>
+    <iconUrl>https://raw.githubusercontent.com/nilproject/NiL.JS/5b0c4730e1e0a23adb95fdc147376065676d8e2c/nil.js%20logo%20small.png</iconUrl>
     <licenseUrl>https://github.com/nilproject/NiL.JS/blob/develop/License</licenseUrl>
     <projectUrl>https://github.com/nilproject/NiL.JS</projectUrl>
-    <iconUrl>https://raw.githubusercontent.com/nilproject/NiL.JS/5b0c4730e1e0a23adb95fdc147376065676d8e2c/nil.js%20logo%20small.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>ES2015 (JavaScript) engine for .NET</description>
     <summary>ES2015 (JavaScript) engine for .NET written on C#</summary>

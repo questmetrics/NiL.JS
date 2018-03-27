@@ -632,7 +632,7 @@ namespace NiL.JS.BaseLibrary
                 }
                 if (y < 100)
                     y += 1900;
-                value =  createDate(y, m+1, d, h, n, s, ms);
+                value =  createDate(y, m, d, h, n, s, ms);
             }
         }
 
@@ -1009,20 +1009,21 @@ namespace NiL.JS.BaseLibrary
         [DoNotEnumerate]
         public JSValue toUTCString()
         {
-            return value.ToUniversalTime().ToString("ddd, d MMM yyyy HH:mm:ss zz");
+            return value.ToUniversalTime().ToString(@"ddd, d MMM yyyy HH:mm:ss \G\M\T");
         }
 
         [DoNotEnumerate]
         public JSValue toGMTString()
         {
-            return value.ToUniversalTime().ToString("ddd, d MMM yyyy HH:mm:ss zz");
+            return value.ToUniversalTime().ToString(@"ddd, d MMM yyyy HH:mm:ss \G\M\T");
         }
 
         [DoNotEnumerate]
         public JSValue toTimeString()
         {
-            var tz = value.ToString("zzzz");
-            return value.ToString(@"HH:mm:ss \G\M\T") + tz.Replace(":", "");
+            var dateTime = value.ToLocalTime();
+            return dateTime.ToString("HH:mm:ss ", System.Globalization.DateTimeFormatInfo.InvariantInfo) 
+                   + FindTimezone(dateTime);
         }
 
         [DoNotEnumerate]

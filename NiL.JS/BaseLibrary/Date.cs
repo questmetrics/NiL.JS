@@ -1,9 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using Microsoft.Win32;
 using NiL.JS.Core;
 using NiL.JS.Core.Interop;
 using NiL.JS.Expressions;
+using NiL.JS.Statements;
 
 namespace NiL.JS.BaseLibrary
 {
@@ -12,49 +17,6 @@ namespace NiL.JS.BaseLibrary
 #endif
     public sealed class Date
     {
-      /*  private const long _unixTimeBase = 62135596800000;
-        private const long _minuteMillisecond = 60 * 1000;
-        private const long _hourMilliseconds = 60 * _minuteMillisecond;
-        private const long _dayMilliseconds = 24 * _hourMilliseconds;
-        private const long _weekMilliseconds = 7 * _dayMilliseconds;
-        private const long _400yearsMilliseconds = (365 * 400 + 100 - 3) * _dayMilliseconds;
-        private const long _100yearsMilliseconds = (365 * 100 + 25 - 1) * _dayMilliseconds;
-        private const long _4yearsMilliseconds = (365 * 4 + 1) * _dayMilliseconds;
-        private const long _yearMilliseconds = 365 * _dayMilliseconds;
-/*
-        //private static readonly long[,] monthLengths = { 
-        //                                       { 31 * _dayMilliseconds, 31 * _dayMilliseconds}, 
-        //                                       { 28 * _dayMilliseconds, 29 * _dayMilliseconds}, 
-        //                                       { 31 * _dayMilliseconds, 31 * _dayMilliseconds}, 
-        //                                       { 30 * _dayMilliseconds, 30 * _dayMilliseconds}, 
-        //                                       { 31 * _dayMilliseconds, 31 * _dayMilliseconds},
-        //                                       { 30 * _dayMilliseconds, 30 * _dayMilliseconds}, 
-        //                                       { 31 * _dayMilliseconds, 31 * _dayMilliseconds}, 
-        //                                       { 31 * _dayMilliseconds, 31 * _dayMilliseconds},
-        //                                       { 30 * _dayMilliseconds, 30 * _dayMilliseconds},
-        //                                       { 31 * _dayMilliseconds, 31 * _dayMilliseconds},
-        //                                       { 30 * _dayMilliseconds, 30 * _dayMilliseconds},
-        //                                       { 31 * _dayMilliseconds, 31 * _dayMilliseconds} };
-
-        private static readonly long[][] timeToMonthLengths = {
-                                                new[]{ 0 * _dayMilliseconds, 0 * _dayMilliseconds },
-                                                new[]{ 31 * _dayMilliseconds, 31 * _dayMilliseconds },
-                                                new[]{ 59 * _dayMilliseconds, 60 * _dayMilliseconds },
-                                                new[]{ 90 * _dayMilliseconds, 91 * _dayMilliseconds },
-                                                new[]{ 120 * _dayMilliseconds, 121 * _dayMilliseconds },
-                                                new[]{ 151 * _dayMilliseconds, 152 * _dayMilliseconds },
-                                                new[]{ 181 * _dayMilliseconds, 182 * _dayMilliseconds },
-                                                new[]{ 212 * _dayMilliseconds, 213 * _dayMilliseconds },
-                                                new[]{ 243 * _dayMilliseconds, 244 * _dayMilliseconds },
-                                                new[]{ 273 * _dayMilliseconds, 274 * _dayMilliseconds },
-                                                new[]{ 304 * _dayMilliseconds, 305 * _dayMilliseconds },
-                                                new[]{ 334 * _dayMilliseconds, 335 * _dayMilliseconds },
-                                                new[]{ 365 * _dayMilliseconds, 366 * _dayMilliseconds } };
-
-        private static readonly string[] daysOfWeek = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", };
-
-        private readonly static string[] months = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };*/
-
         /// <summary>
         /// Allows for the fact javascript allows a weird number for any parameter.
         /// </summary>
@@ -128,6 +90,8 @@ namespace NiL.JS.BaseLibrary
                     return i;
             return -1;
         }*/
+
+        
         /*
         private static bool parseSelf(string timeStr, out long time, out long timeZoneOffset)
         {
@@ -473,7 +437,10 @@ namespace NiL.JS.BaseLibrary
 
         private static DateTime tryParse(string timeString)
         {
-            return DateTime.Parse(timeString);
+            var guess = Parse(timeString);
+            if (guess == _error)
+                guess = ParseRelaxed(timeString);
+            return guess;
         }
 
         private DateTime value;
@@ -683,7 +650,7 @@ namespace NiL.JS.BaseLibrary
 
         private int getPart(char part, bool isUTC)
         {
-            var from = isUTC ? value : value.ToUniversalTime();
+            var from = isUTC ? value.ToUniversalTime() : value;
             switch (part)
             {
                 case 'Y': return from.Year;
@@ -700,7 +667,7 @@ namespace NiL.JS.BaseLibrary
 
         private void setPart(char part, int amount, bool isUTC)
         {
-            var from = isUTC ? value : value.ToUniversalTime();
+            var from = isUTC ? value.ToUniversalTime() : value;
             switch (part)
             {
                 case 'Y': value = new DateTime(amount, from.Month,from.Day,from.Hour,from.Minute,from.Second,from.Millisecond, isUTC ? DateTimeKind.Utc : DateTimeKind.Local); break;
@@ -981,23 +948,19 @@ namespace NiL.JS.BaseLibrary
         [DoNotEnumerate]
         public JSValue toLocaleString()
         {
-#if !(PORTABLE || NETCORE)
-            return value.ToLongDateString() + " " + value.ToLongTimeString();
-#else
-            return dt.ToString();
-#endif
+            return value.ToShortDateString() + ", " + value.ToString("HH:mm:ss");
         }
 
         [DoNotEnumerate]
         public JSValue toLocaleTimeString()
         {
-            return value.ToString("HH\\:mm\\:ss");
+            return value.ToString("HH:mm:ss");
         }
 
         [DoNotEnumerate]
         public JSValue toISOString()
         {
-            return value.ToUniversalTime().ToString("yyyy-MM-ddTHH\\:mm\\:ss.fffZ");
+            return value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
         }
 
         [DoNotEnumerate]
@@ -1052,7 +1015,8 @@ namespace NiL.JS.BaseLibrary
         [DoNotEnumerate]
         public static JSValue parse(string dateTime)
         {
-            return DateTimeToMs(DateTime.Parse(dateTime));
+            var guess = tryParse(dateTime);
+            return guess==_error ? Number.NaN : DateTimeToMs(guess);
         }
 
         [DoNotEnumerate]
@@ -1076,11 +1040,205 @@ namespace NiL.JS.BaseLibrary
             var timeZone = TimeZoneInfo.Local;
             int offsetInMinutes = (int)timeZone.GetUtcOffset(dateTime).TotalMinutes;
             int hhmm = offsetInMinutes / 60 * 100 + offsetInMinutes % 60;
-            string zoneName;
-            zoneName = timeZone.IsDaylightSavingTime(dateTime) ? timeZone.DaylightName : timeZone.StandardName;
+            var zoneName = timeZone.IsDaylightSavingTime(dateTime) ? timeZone.DaylightName : timeZone.StandardName;
             return string.Format(hhmm < 0 ? "GMT{0:d4} ({1})" : "GMT+{0:d4} ({1})", hhmm, zoneName);
         }
 
+
+        static Regex regex = new Regex(
+            @"^(  (?<Y> [0-9]{4} ) (- (?<M> [0-9]{2} ) (- (?<D> [0-9]{2} ))?)?)
+               (T (?<H> [0-9]{2} ) : (?<m> [0-9]{2} ) (: (?<s> [0-9]{2} ) (\. (?<n> [0-9]{1,3} ) [0-9]* )?)?
+               (?<z> Z | (?<zh> [+-][0-9]{2} ) : (?<zm> [0-9]{2} ) )?)?$",
+               RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+
+        private static DateTime Parse(string input)
+        {
+            var match = regex.Match(input);
+            if (match.Success)
+            {
+                int Y, M, D, h, m, s, n;
+                Y = regValue(match, "Y", 1970);
+                M = regValue(match, "M", 1);
+                D = regValue(match, "D", 1);
+                h = regValue(match, "h", 0);
+                m = regValue(match, "m", 0);
+                s = regValue(match, "s", 0);
+                n = regValue(match, "n", 0);
+                int multiplier = match.Groups["n"].Value.Length;
+                n = n * (1000 - (int)System.Math.Pow(10,3-multiplier));
+
+                if ((M<1 || M>12) ||
+                    (D < 1 || D > 31) ||
+                    (h > 23 || h < 0) ||
+                    (m > 59 || m < 0) ||
+                    (s > 59 || s < 0) ||
+                    (n > 999 || s < 0))
+                    return _error;
+
+                var zone = match.Groups["z"].Value;
+                var zonediff = 0;
+                if (!System.String.IsNullOrWhiteSpace(zone) && zone != "Z" )
+                {
+                    var zm = regValue(match, "zm", 0);
+                    var zh = regValue(match, "zh", 0);
+                    if (zh > 23)
+                        return _error;
+                    if (zh > 59)
+                        return _error;
+
+                    zonediff = zh*60 + ((zh < 0) ? -zm : zm);
+                }
+                try
+                {
+                    return new DateTime(Y, M,D, h,m,s,n, DateTimeKind.Utc).AddMinutes(zonediff);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    return _error;
+                }
+
+            }
+            return _error;
+        }
+
+        private static DateTime ParseRelaxed(string input)
+        {
+            var parts = input.Split(new char[] { ' ', ',', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            var result = new DateTime();
+            int offset = 0;
+            bool haveday = false;
+            bool havemonth = false;
+            bool haveyear = false;
+            foreach (var part in parts)
+            {
+                if (LocalNames.Timezones.ContainsKey(part))
+                {
+                    offset = LocalNames.Timezones[part];
+                }
+                else if (part.StartsWith("GMT", StringComparison.OrdinalIgnoreCase) ||
+                    part.StartsWith("UTC", StringComparison.OrdinalIgnoreCase) ||
+                    part.StartsWith("+", StringComparison.OrdinalIgnoreCase) ||
+                    part.StartsWith("-", StringComparison.OrdinalIgnoreCase))
+                {
+                    var subpart = part.StartsWith("GMT") || part.StartsWith("UTC") ? part.Substring(3) : "0";
+                    var offsetstring = int.Parse(subpart);
+                    offset = (offsetstring / 100) * 60 + (offsetstring % 100);
+                }
+                else if (part.IndexOfAny(new [] {'/', '-'}) != -1)
+                {
+                    var datepart = DateTime.Parse(part);
+                    result = datepart.Add(result.TimeOfDay);
+                    haveday = havemonth = haveyear = true;
+                }
+                else if (part.Equals("PM", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (result.Hour < 12)
+                        result = result.AddHours(12);
+                }
+                else if (part.Equals("AM", StringComparison.OrdinalIgnoreCase))
+                { } //Ignore
+                else if (part.IndexOf(':') >= 0)
+                {
+                    var timepart = DateTime.Parse(part);
+                    result = result.Date.Add(timepart.TimeOfDay);
+                }
+                else if (LocalNames.Months.ContainsKey(part))
+                {
+                    var month = LocalNames.Months[part];
+                    result = new DateTime(result.Year, month,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Utc);
+                    havemonth = true;
+                }
+                else if (LocalNames.Weekdays.ContainsKey(part))
+                {
+                    // Ignore days
+                }
+                else if (part.All(Char.IsNumber))
+                {
+                    var val = int.Parse(part);
+                    if (val < 32 && !haveday)
+                    {
+                        result = new DateTime(result.Year, result.Month, val, result.Hour, result.Minute, result.Second, result.Millisecond, DateTimeKind.Utc);
+                    }
+                    else if (val < 13 && !havemonth)
+                        result = new DateTime(result.Year, val ,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Utc);
+                    else if (val > 1900)
+                    result = new DateTime(val, result.Month,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Utc);
+                    else if (val >= 50 && !haveyear)
+                    result = new DateTime(val+1900, result.Month,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Utc);
+                    else if (val < 50 && !haveyear)
+                        result = new DateTime(val+2000, result.Month,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Utc);
+                }
+                else if (part.StartsWith("Z", StringComparison.OrdinalIgnoreCase))
+                {
+                    //Ignore Z (UTC)
+                }
+                else if (part.StartsWith("("))
+                {
+                    break; // Anything in parenthesis is classed as the end of the date part
+                }
+                else
+                {
+                    Console.WriteLine($"Not sure how to handle part called '{part}'");
+                }
+            }
+
+            return result.AddMinutes(offset);
+        }
+
+
+
+        private static int regValue(Match match, string field, int def)
+        {
+            return int.TryParse(match.Groups[field].Value, out int value) ? value : def;
+        }
+
+        private class LocalNames
+        {
+            public static readonly Dictionary<string, int> Weekdays = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            public static readonly Dictionary<string, int> Months = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            public static readonly Dictionary<string, int> Timezones;
+
+            static LocalNames()
+            {
+                var sname = CultureInfo.InvariantCulture.DateTimeFormat.AbbreviatedMonthNames;
+                var lname = CultureInfo.InvariantCulture.DateTimeFormat.MonthNames;
+                for (int i = 0; i < 12; i++)
+                {
+                    Months[sname[i]] = i+1;
+                    Months[lname[i]] = i+1;
+                }
+
+                var wnames = CultureInfo.InvariantCulture.DateTimeFormat.AbbreviatedDayNames;
+                var wnamel = CultureInfo.InvariantCulture.DateTimeFormat.DayNames;
+                for (int i = 0; i < 7; i++)
+                {
+                    Weekdays[wnames[i]] = i;
+                    Weekdays[wnamel[i]] = i;
+                }
+
+                Timezones = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    {"M", -12*60},
+                    {"PST", -8*60},
+                    {"PDT", -7*60},
+                    {"MST", -7*60},
+                    {"MDT", -6*60},
+                    {"CST", -6*60},
+                    {"EST", -5*60},
+                    {"CDT", -5*60},
+                    {"EDT", -4*60},
+                    {"A", -1*60},
+                    {"UT", 0},
+                    {"UTC", 0},
+                    {"GMT", 0},
+                    {"Z", 0},
+                    {"N", 1*60},
+                    {"Y", 12*60}
+                };
+
+
+            }
+        }
 
 
         #region Do not remove

@@ -52,7 +52,7 @@ namespace FunctionalTests
             var context = new Context();
             var code = $"new Date(Date.parse('1 Jan 2018 3:17:45 pm')).toString()";
             var val = context.Eval(code);
-            Assert.AreNotEqual("Mon Jan 01 2018 15:17:45 GMT+1100 (AUS Eastern Daylight Time)", val);
+            Assert.AreEqual("Mon Jan 01 2018 15:17:45 GMT+1100 (AUS Eastern Daylight Time)", val);
         }
 
         [TestMethod]
@@ -61,7 +61,7 @@ namespace FunctionalTests
             var context = new Context();
             var code = $"new Date(Date.parse('1 Jan 18 15:17:45')).toString()";
             var val = context.Eval(code);
-            Assert.AreNotEqual("Mon Jan 01 2018 15:17:45 GMT+1100 (AUS Eastern Daylight Time)", val);
+            Assert.AreEqual("Mon Jan 01 2018 15:17:45 GMT+1100 (AUS Eastern Daylight Time)", val);
         }
 
         [TestMethod]
@@ -70,7 +70,7 @@ namespace FunctionalTests
             var context = new Context();
             var code = $"new Date(Date.parse('1 Jan 18 15:17')).toString()";
             var val = context.Eval(code);
-            Assert.AreNotEqual("Mon Jan 01 2018 15:17:00 GMT+1100 (AUS Eastern Daylight Time)", val);
+            Assert.AreEqual("Mon Jan 01 2018 15:17:00 GMT+1100 (AUS Eastern Daylight Time)", val);
         }
 
         [TestMethod]
@@ -79,7 +79,7 @@ namespace FunctionalTests
             var context = new Context();
             var code = $"new Date(Date.parse('1 Jan 18 04:17 GMT')).toString()";
             var val = context.Eval(code);
-            Assert.AreNotEqual("Mon Jan 01 2018 15:17:00 GMT+1100 (AUS Eastern Daylight Time)", val);
+            Assert.AreEqual("Mon Jan 01 2018 15:17:00 GMT+1100 (AUS Eastern Daylight Time)", val);
         }
 
         [TestMethod]
@@ -88,7 +88,7 @@ namespace FunctionalTests
             var context = new Context();
             var code = $"new Date(Date.parse('2018 12 January 3:17 pm')).toString()";
             var val = context.Eval(code);
-            Assert.AreNotEqual("Mon Jan 12 2018 15:17:00 GMT+1100 (AUS Eastern Daylight Time)", val);
+            Assert.AreEqual("Mon Jan 12 2018 15:17:00 GMT+1100 (AUS Eastern Daylight Time)", val);
         }
 
         [TestMethod]
@@ -97,7 +97,16 @@ namespace FunctionalTests
             var context = new Context();
             var code = $"new Date(Date.parse('2018 January 12 3:17 pm')).toString()";
             var val = context.Eval(code);
-            Assert.AreNotEqual("Mon Jan 12 2018 15:17:00 GMT+1100 (AUS Eastern Daylight Time)", val);
+            Assert.AreEqual("Mon Jan 12 2018 15:17:00 GMT+1100 (AUS Eastern Daylight Time)", val);
+        }
+
+        [TestMethod]
+        public void TestTimezone1() // 10 hours difference
+        {
+            var context = new Context();
+            var code = $"new Date(Date.parse('2018 January 12 13:00 +0100')).toJSON()";
+            var val = context.Eval(code);
+            Assert.AreEqual("Mon Jan 12 2018 15:17:00 GMT+1100 (AUS Eastern Daylight Time)", val);
         }
 
     }

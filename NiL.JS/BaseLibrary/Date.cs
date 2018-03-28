@@ -1106,6 +1106,7 @@ namespace NiL.JS.BaseLibrary
             var parts = input.Split(new char[] { ' ', ',', '\t' }, StringSplitOptions.RemoveEmptyEntries);
             var result = new DateTime();
             int offset = 0;
+            bool isLocalTz = true;
             bool haveday = false;
             bool havemonth = false;
             bool haveyear = false;
@@ -1114,6 +1115,7 @@ namespace NiL.JS.BaseLibrary
                 if (LocalNames.Timezones.ContainsKey(part))
                 {
                     offset = LocalNames.Timezones[part];
+                    isLocalTz = false;
                 }
                 else if (part.StartsWith("GMT", StringComparison.OrdinalIgnoreCase) ||
                     part.StartsWith("UTC", StringComparison.OrdinalIgnoreCase) ||
@@ -1123,6 +1125,7 @@ namespace NiL.JS.BaseLibrary
                     var subpart = part.StartsWith("GMT") || part.StartsWith("UTC") ? part.Substring(3) : "0";
                     var offsetstring = int.Parse(subpart);
                     offset = (offsetstring / 100) * 60 + (offsetstring % 100);
+                    isLocalTz = false;
                 }
                 else if (part.IndexOfAny(new [] {'/', '-'}) != -1)
                 {
@@ -1145,7 +1148,7 @@ namespace NiL.JS.BaseLibrary
                 else if (LocalNames.Months.ContainsKey(part))
                 {
                     var month = LocalNames.Months[part];
-                    result = new DateTime(result.Year, month,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Utc);
+                    result = new DateTime(result.Year, month,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Unspecified);
                     havemonth = true;
                 }
                 else if (LocalNames.Weekdays.ContainsKey(part))
@@ -1157,16 +1160,16 @@ namespace NiL.JS.BaseLibrary
                     var val = int.Parse(part);
                     if (val < 32 && !haveday)
                     {
-                        result = new DateTime(result.Year, result.Month, val, result.Hour, result.Minute, result.Second, result.Millisecond, DateTimeKind.Utc);
+                        result = new DateTime(result.Year, result.Month, val, result.Hour, result.Minute, result.Second, result.Millisecond, DateTimeKind.Unspecified);
                     }
                     else if (val < 13 && !havemonth)
-                        result = new DateTime(result.Year, val ,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Utc);
+                        result = new DateTime(result.Year, val ,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Unspecified);
                     else if (val > 1900)
-                    result = new DateTime(val, result.Month,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Utc);
+                    result = new DateTime(val, result.Month,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Unspecified);
                     else if (val >= 50 && !haveyear)
-                    result = new DateTime(val+1900, result.Month,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Utc);
+                    result = new DateTime(val+1900, result.Month,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Unspecified);
                     else if (val < 50 && !haveyear)
-                        result = new DateTime(val+2000, result.Month,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Utc);
+                        result = new DateTime(val+2000, result.Month,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Unspecified);
                 }
                 else if (part.StartsWith("Z", StringComparison.OrdinalIgnoreCase))
                 {
@@ -1180,6 +1183,12 @@ namespace NiL.JS.BaseLibrary
                 {
                     Console.WriteLine($"Not sure how to handle part called '{part}'");
                 }
+            }
+
+            if (isLocalTz)
+            {
+                return new DateTime(result.Year, result.Month, result.Day, result.Hour, result.Minute, result.Second,
+                    result.Millisecond, DateTimeKind.Local).AddMinutes(offset);
             }
 
             return result.AddMinutes(offset);

@@ -146,6 +146,5 @@ namespace FunctionalTests
             var stringValue = context.Eval(code);
             Assert.AreEqual(snapshot.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:00.000Z"), stringValue.Value);
         }
-
     }
 }

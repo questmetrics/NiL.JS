@@ -556,67 +556,27 @@ namespace NiL.JS.BaseLibrary
             if (value._valueType == JSValueType.Integer)
                 return value;
 
+            double result;
             var a = Tools.JSObjectToDouble(value);
-            if (a == 0.0)
+
+            if (a > 0.0)
+                result = (long)System.Math.Floor(a+0.5);
+            else if (a >= -0.5)
             {
-                if ((value._attributes & JSValueAttributesInternal.Cloned) != 0)
-                {
-                    value._valueType = JSValueType.Integer;
-                    value._iValue = 0;
-                    return value;
-                }
-
-                return a;
+                var b = BitConverter.DoubleToInt64Bits(a);
+                result = b == 0 ? 0.0 : -0.0;
             }
-
-            var b = BitConverter.DoubleToInt64Bits(a);
-            ulong m = ((ulong)b & ((1UL << 52) - 1)) | (1UL << 52);
-            int e = 0;
-            long s = (b >> 63) | 1L;
-            b &= long.MaxValue;
-            e = (int)(b >> 52);
-            e = 52 - e + 1023;
-
-            if (e > 0)
+            else
             {
-                if (s < 0)
-                {
-                    if ((shl(m, (e - 1)) & 1) == 1)
-                    {
-                        if ((m & ((1UL << (e - 1)) - 1UL)) != 0)
-                            return -(long)shl(m, e) - 1;
-                        return -(long)shl(m, e);
-                    }
-                }
-
-                var r = ((long)shl(m, e) + ((long)shl(m, (e - 1)) & 1) * s) * s;
-                if ((value._attributes & JSValueAttributesInternal.Cloned) != 0)
-                {
-                    if (r <= int.MaxValue)
-                    {
-                        value._valueType = JSValueType.Integer;
-                        value._iValue = (int)r;
-                    }
-                    else
-                    {
-                        value._valueType = JSValueType.Double;
-                        value._dValue = r;
-                    }
-
-                    return value;
-                }
-
-                return r;
+                result = System.Math.Floor(a + 0.5);
             }
-
             if ((value._attributes & JSValueAttributesInternal.Cloned) != 0)
             {
                 value._valueType = JSValueType.Double;
-                value._dValue = a;
+                value._dValue = result;
                 return value;
             }
-
-            return double.IsNaN(a) ? Number.NaN : a;
+            return double.IsNaN(result) ? Number.NaN : result;
         }
 
         [DoNotEnumerate]

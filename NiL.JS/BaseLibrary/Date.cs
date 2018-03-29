@@ -759,8 +759,11 @@ namespace NiL.JS.BaseLibrary
             foreach (var val in freeform)
             {
                 if (val < 13 && !havemonth)
+                {
                     result = new DateTime(result.Year, val, result.Day, result.Hour, result.Minute, result.Second,
                         result.Millisecond, DateTimeKind.Utc);
+                    havemonth = true;
+                }
                 else if (val < 32 && !haveday)
                 {
                     result = new DateTime(result.Year, result.Month, val, result.Hour, result.Minute, result.Second,
@@ -768,14 +771,23 @@ namespace NiL.JS.BaseLibrary
                     haveday = true;
                 }
                 else if (val > 1900)
+                {
                     result = new DateTime(val, result.Month, result.Day, result.Hour, result.Minute, result.Second,
                         result.Millisecond, DateTimeKind.Utc);
+                    haveyear = true;
+                }
                 else if (val >= 50 && !haveyear)
+                {
                     result = new DateTime(val + 1900, result.Month, result.Day, result.Hour, result.Minute,
                         result.Second, result.Millisecond, DateTimeKind.Utc);
+                    haveyear = true;
+                }
                 else if (val < 50 && !haveyear)
+                {
                     result = new DateTime(val + 2000, result.Month, result.Day, result.Hour, result.Minute,
                         result.Second, result.Millisecond, DateTimeKind.Utc);
+                    haveyear = true;
+                }
             }
 
             return isLocalTz ? result.Add(result.Subtract(result.ToLocalTime())) : result.AddMinutes(-offset);

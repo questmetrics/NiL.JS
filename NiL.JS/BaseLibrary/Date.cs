@@ -246,7 +246,7 @@ namespace NiL.JS.BaseLibrary
 
         private int getPart(char part, bool isUTC)
         {
-            var from = isUTC ? value.ToUniversalTime() : value;
+            var from = isUTC ? value.ToUniversalTime() : value.ToLocalTime();
             switch (part)
             {
                 case 'Y': return from.Year;
@@ -263,7 +263,7 @@ namespace NiL.JS.BaseLibrary
 
         private void setPart(char part, int amount, bool isUTC)
         {
-            var from = isUTC ? value.ToUniversalTime() : value;
+            var from = isUTC ? value.ToUniversalTime() : value.ToLocalTime();
             switch (part)
             {
                 case 'Y': value = new DateTime(amount, from.Month,from.Day,from.Hour,from.Minute,from.Second,from.Millisecond, isUTC ? DateTimeKind.Utc : DateTimeKind.Local); break;

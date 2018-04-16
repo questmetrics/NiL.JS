@@ -624,7 +624,7 @@ namespace NiL.JS.BaseLibrary
 
         static Regex regex = new Regex(
             @"^((?<Y>[0-9]{4}) (-(?<M>[0-9]{2}) (-(?<D>[0-9]{2}))?)?)
-               (T (?<H>[0-9]{2}) : (?<m>[0-9]{2}) (:(?<s>[0-9]{2}) (\.(?<n>[0-9]{1,3})[0-9]*)?)?
+               (T (?<h>[0-9]{2}) : (?<m>[0-9]{2}) (:(?<s>[0-9]{2}) (\.(?<n>[0-9]{1,3})[0-9]*)?)?
                (?<z>Z|(?<zh>[+-][0-9]{2}) : (?<zm>[0-9]{2}))?)?$",
                RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
 
@@ -643,12 +643,7 @@ namespace NiL.JS.BaseLibrary
                 int multiplier = match.Groups["n"].Value.Length;
                 n = n * (1000 - (int)System.Math.Pow(10,3-multiplier));
 
-                if ((M<1 || M>12) ||
-                    (D < 1 || D > 31) ||
-                    (h > 23 || h < 0) ||
-                    (m > 59 || m < 0) ||
-                    (s > 59 || s < 0) ||
-                    (n > 999 || s < 0))
+                if (M<1 || M>12 || D < 1 || D > 31 || h > 23 || h < 0 || m > 59 || m < 0 || s > 59 || s < 0 || n > 999 || s < 0)
                     return _error;
 
                 var zone = match.Groups["z"].Value;
@@ -666,7 +661,9 @@ namespace NiL.JS.BaseLibrary
                 }
                 try
                 {
-                    return new DateTime(Y, M,D, h,m,s,n, DateTimeKind.Utc).AddMinutes(zonediff);
+                    return zone==""
+                        ? new DateTime(Y, M,D, h,m,s,n, DateTimeKind.Local)
+                        : new DateTime(Y, M,D, h,m,s,n, DateTimeKind.Utc).AddMinutes(zonediff);
                 }
                 catch (ArgumentOutOfRangeException)
                 {
@@ -680,13 +677,14 @@ namespace NiL.JS.BaseLibrary
         private static DateTime ParseRelaxed(string input)
         {
             var parts = input.Split(new char[] { ' ', ',', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-            var result = new DateTime().ToUniversalTime();
             int offset = 0;
             bool isLocalTz = true;
 
             bool haveday = false;
             bool havemonth = false;
             bool haveyear = false;
+            TimeSpan timepart = TimeSpan.Zero;
+            DateTime datepart = DateTime.UtcNow.Date;
             List<int> freeform = new List<int>();
             foreach (var part in parts)
             {
@@ -710,26 +708,24 @@ namespace NiL.JS.BaseLibrary
                 }
                 else if (part.IndexOfAny(new [] {'/', '-'}) != -1)
                 {
-                    var datepart = DateTime.Parse(part);
-                    result = datepart.Add(result.TimeOfDay);
+                    datepart = DateTime.Parse(part).Date;
                     haveday = havemonth = haveyear = true;
                 }
                 else if (part.Equals("PM", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (result.Hour < 12)
-                        result = result.AddHours(12);
+                    if (timepart.Hours < 12)
+                        timepart = timepart.Add(TimeSpan.FromHours(12));
                 }
                 else if (part.Equals("AM", StringComparison.OrdinalIgnoreCase))
                 { } //Ignore
                 else if (part.IndexOf(':') >= 0)
                 {
-                    var timepart = DateTime.Parse(part);
-                    result = result.Date.Add(timepart.TimeOfDay);
+                    timepart = DateTime.Parse(part).TimeOfDay;
                 }
                 else if (LocalNames.Months.ContainsKey(part))
                 {
                     var month = LocalNames.Months[part];
-                    result = new DateTime(result.Year, month,result.Day,result.Hour,result.Minute,result.Second,result.Millisecond, DateTimeKind.Utc);
+                    datepart = new DateTime(datepart.Year, month,datepart.Day, 0,0,0, DateTimeKind.Utc);
                     havemonth = true;
                 }
                 else if (LocalNames.Weekdays.ContainsKey(part))
@@ -754,7 +750,9 @@ namespace NiL.JS.BaseLibrary
                     // Ignore date items we don't recognise
                 }
             }
-
+            
+            var result = new DateTime(datepart.Year,datepart.Month,datepart.Day, 0,0,0,isLocalTz ? DateTimeKind.Local : DateTimeKind.Utc);
+            
             // Check numbers scattered around to identify possible years/month/day
             foreach (var val in freeform)
             {
@@ -790,7 +788,10 @@ namespace NiL.JS.BaseLibrary
                 }
             }
 
-            return isLocalTz ? result.Add(result.Subtract(result.ToLocalTime())) : result.AddMinutes(-offset);
+            result = result.Date.Add(timepart);
+            
+            return isLocalTz ? result : result.ToUniversalTime().AddMinutes(-offset);
+            //return isLocalTz ? result.Add(result.Subtract(result.ToLocalTime())) : result.AddMinutes(-offset);
         }
 
 

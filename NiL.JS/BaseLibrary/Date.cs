@@ -750,7 +750,7 @@ namespace NiL.JS.BaseLibrary
                 return "Invalid date";
 
             var offset = new TimeSpan(_timeZoneOffset * _timeAccuracy);
-            var timeName = CurrentTimeZone.IsDaylightSavingTime(new DateTimeOffset(_time * _timeAccuracy, offset)) ? TimeZoneInfo.Local.DaylightName : TimeZoneInfo.Local.StandardName;
+            var timeName = CurrentTimeZone.IsDaylightSavingTime(new DateTimeOffset(_time * _timeAccuracy, offset)) ? CurrentTimeZone.DaylightName : CurrentTimeZone.StandardName;
             var res = getHoursImpl(withTzo).ToString("00:")
                       + getMinutesImpl(withTzo).ToString("00:")
                       + getSecondsImpl().ToString("00")

@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
 using NiL.JS.Core;
 using NiL.JS.Core.Interop;
 
@@ -10,64 +13,77 @@ namespace NiL.JS.BaseLibrary
 #endif
     public sealed class Date
     {
-        private static TimeZoneInfo s_currentTimeZone = TimeZoneInfo.Local;
-        [Hidden]
-        public static TimeZoneInfo CurrentTimeZone
+        /// <summary>
+        /// Allows for the fact javascript allows a weird number for any parameter.
+        /// </summary>
+        /// <param name="year"></param>
+        /// <param name="month">The month number, zero indexed!</param>
+        /// <param name="day"></param>
+        /// <param name="hour"></param>
+        /// <param name="minute"></param>
+        /// <param name="second"></param>
+        /// <param name="millisecond"></param>
+        /// <param name="isUTC"></param>
+        /// <returns></returns>
+        private static DateTime createDate(int year, int month, int day, int hour, int minute, int second, int millisecond, bool isUTC = false)
         {
-            get => s_currentTimeZone;
-            set => s_currentTimeZone = value ?? throw new ArgumentNullException(nameof(value));
+            var dt = new DateTime(1, 1, 1, 0,0,0,0, isUTC ? DateTimeKind.Utc : DateTimeKind.Local);
+            return dt.AddYears(year-1).AddMonths(month).AddDays(day-1).AddHours(hour).AddMinutes(minute).AddSeconds(second).AddMilliseconds(millisecond);
         }
 
-        private const long _timeAccuracy = TimeSpan.TicksPerMillisecond;
-        private const long _unixTimeBase = 62135596800000;
-        private const long _minuteMillisecond = 60 * 1000;
-        private const long _hourMilliseconds = 60 * _minuteMillisecond;
-        private const long _dayMilliseconds = 24 * _hourMilliseconds;
-        private const long _weekMilliseconds = 7 * _dayMilliseconds;
-        private const long _400yearsMilliseconds = (365 * 400 + 100 - 3) * _dayMilliseconds;
-        private const long _100yearsMilliseconds = (365 * 100 + 25 - 1) * _dayMilliseconds;
-        private const long _4yearsMilliseconds = (365 * 4 + 1) * _dayMilliseconds;
-        private const long _yearMilliseconds = 365 * _dayMilliseconds;
+        private static DateTime tryParse(string timeString)
+        {
+            var guess = Parse(timeString);
+            if (guess == _error)
+                guess = ParseRelaxed(timeString);
+            return guess;
+        }
 
-        private static readonly long[][] timeToMonthLengths = {
-                                                    new[]{ 0 * _dayMilliseconds, 0 * _dayMilliseconds },
-                                                    new[]{ 31 * _dayMilliseconds, 31 * _dayMilliseconds },
-                                                    new[]{ 59 * _dayMilliseconds, 60 * _dayMilliseconds },
-                                                    new[]{ 90 * _dayMilliseconds, 91 * _dayMilliseconds },
-                                                    new[]{ 120 * _dayMilliseconds, 121 * _dayMilliseconds },
-                                                    new[]{ 151 * _dayMilliseconds, 152 * _dayMilliseconds },
-                                                    new[]{ 181 * _dayMilliseconds, 182 * _dayMilliseconds },
-                                                    new[]{ 212 * _dayMilliseconds, 213 * _dayMilliseconds },
-                                                    new[]{ 243 * _dayMilliseconds, 244 * _dayMilliseconds },
-                                                    new[]{ 273 * _dayMilliseconds, 274 * _dayMilliseconds },
-                                                    new[]{ 304 * _dayMilliseconds, 305 * _dayMilliseconds },
-                                                    new[]{ 334 * _dayMilliseconds, 335 * _dayMilliseconds },
-                                                    new[]{ 365 * _dayMilliseconds, 366 * _dayMilliseconds }
-                                                };
-
-        private static readonly string[] daysOfWeek = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
-        private static readonly string[] months = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-
-        private long _time;
-        private long _timeZoneOffset;
-        private bool _error;
+        private DateTime value;
+        private static readonly DateTime _error = DateTime.MinValue;
+        private static readonly DateTime _mindate = new DateTime(1970,1,1,0,0,0,0);
+        private bool isError => (value == DateTime.MinValue);
 
         [DoNotEnumerate]
         public Date()
         {
-            _time = DateTime.Now.Ticks / 10000;
-            _timeZoneOffset = CurrentTimeZone.GetUtcOffset(DateTime.Now).Ticks / 10000;
-            _time -= _timeZoneOffset;
+            value = DateTime.Now;
         }
 
-        [DoNotEnumerate]
-        public Date(DateTime dateTime)
+        [Hidden]
+        public Date(long ticks)
         {
-            _time = dateTime.Ticks / 10000;
-            _timeZoneOffset = CurrentTimeZone.GetUtcOffset(dateTime).Ticks / 10000;
-            if (dateTime.Kind != DateTimeKind.Utc)
-                _time -= _timeZoneOffset;
+            value = msToDateTime(ticks);
         }
+
+        [Hidden]
+        public Date(DateTime dt)
+        {
+            value = dt;
+        }
+
+        [Hidden] public DateTime Value => value;
+
+        private static DateTime msToDateTime(double milliseconds)
+        {
+            if (double.IsNaN(milliseconds) || double.IsInfinity(milliseconds))
+                return _error;
+            try
+            {
+                return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    .AddMilliseconds(System.Math.Truncate(milliseconds));
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return _error;
+            }
+        }
+
+        private static double DateTimeToMs(DateTime dt)
+        {
+            return System.Math.Floor(dt.Subtract(_mindate).TotalMilliseconds);
+        }
+
 
         [DoNotEnumerate]
         [ArgumentsCount(7)]
@@ -84,134 +100,102 @@ namespace NiL.JS.BaseLibrary
                     case JSValueType.Integer:
                     case JSValueType.Boolean:
                     case JSValueType.Double:
-                    {
-                        var timeValue = Tools.JSObjectToDouble(arg);
-                        if (double.IsNaN(timeValue) || double.IsInfinity(timeValue))
                         {
-                            _error = true;
+                            var timeValue = Tools.JSObjectToDouble(arg);
+                            if (double.IsNaN(timeValue) || double.IsInfinity(timeValue))
+                            {
+                                value = _error;
+                                break;
+                            }
+                            value = msToDateTime((long)timeValue);
                             break;
                         }
-
-                        _time = (long)timeValue + _unixTimeBase;
-                        _timeZoneOffset = getTimeZoneOffset(_time);
-                        break;
-                    }
                     case JSValueType.String:
                     {
-                        _error = !tryParse(arg.ToString(), out _time, out _timeZoneOffset);
+                        value = tryParse(arg.ToString());
                         break;
                     }
                 }
             }
             else
             {
-                for (var i = 0; i < 9 && !_error; i++)
+                bool error = false;
+                for (var i = 0; i < 9 && !error; i++)
                 {
                     if (args[i].Exists && !args[i].Defined)
                     {
-                        _error = true;
+                        error = true;
                         return;
                     }
                 }
-                long y = Tools.JSObjectToInt64(args[0], 1, true);
-                long m = Tools.JSObjectToInt64(args[1], 0, true);
-                long d = Tools.JSObjectToInt64(args[2], 1, true);
-                long h = Tools.JSObjectToInt64(args[3], 0, true);
-                long n = Tools.JSObjectToInt64(args[4], 0, true);
-                long s = Tools.JSObjectToInt64(args[5], 0, true);
-                long ms = Tools.JSObjectToInt64(args[6], 0, true);
-                if (y == long.MaxValue
-                    || y == long.MinValue)
+                int y = Tools.JSObjectToInt32(args[0], 1, true);
+                int m = Tools.JSObjectToInt32(args[1], 0, true);
+                int d = Tools.JSObjectToInt32(args[2], 1, true);
+                int h = Tools.JSObjectToInt32(args[3], 0, true);
+                int n = Tools.JSObjectToInt32(args[4], 0, true);
+                int s = Tools.JSObjectToInt32(args[5], 0, true);
+                int ms = Tools.JSObjectToInt32(args[6], 0, true);
+                if (y == int.MaxValue
+                    || y == int.MinValue)
                 {
-                    _error = true;
+                    value = _error;
                     return;
                 }
                 if (y > 9999999
                     || y < -9999999)
                 {
-                    _error = true;
+                    value = _error;
                     return;
                 }
-                if (m == long.MaxValue
-                    || m == long.MinValue)
+                if (m == int.MaxValue
+                    || m == int.MinValue)
                 {
-                    _error = true;
+                    value = _error;
                     return;
                 }
-                if (d == long.MaxValue
-                    || d == long.MinValue)
+                if (d == int.MaxValue
+                    || d == int.MinValue)
                 {
-                    _error = true;
+                    value = _error;
                     return;
                 }
-                if (h == long.MaxValue
-                    || h == long.MinValue)
+                if (h == int.MaxValue
+                    || h == int.MinValue)
                 {
-                    _error = true;
+                    value = _error;
                     return;
                 }
-                if (n == long.MaxValue
-                    || n == long.MinValue)
+                if (n == int.MaxValue
+                    || n == int.MinValue)
                 {
-                    _error = true;
+                    value = _error;
                     return;
                 }
-                if (s == long.MaxValue
-                    || s == long.MinValue)
+                if (s == int.MaxValue
+                    || s == int.MinValue)
                 {
-                    _error = true;
+                    value = _error;
                     return;
                 }
-                if (ms == long.MaxValue
-                    || ms == long.MinValue)
+                if (ms == int.MaxValue
+                    || ms == int.MinValue)
                 {
-                    _error = true;
+                    value = _error;
                     return;
                 }
                 for (var i = 7; i < System.Math.Min(8, args.length); i++)
                 {
                     var t = Tools.JSObjectToInt64(args[i], 0, true);
-                    if (t == long.MaxValue
-                    || t == long.MinValue)
+                    if (t == int.MaxValue
+                    || t == int.MinValue)
                     {
-                        _error = true;
+                        value = _error;
                         return;
                     }
                 }
-
                 if (y < 100)
                     y += 1900;
-
-                _time = dateToMilliseconds(y, m, d, h, n, s, ms);
-                _timeZoneOffset = getTimeZoneOffset(_time);
-                _time -= _timeZoneOffset;
-
-                if (_time - _unixTimeBase > 8640000000000000)
-                    _error = true;
-            }
-        }
-
-        private static long getTimeZoneOffset(long time)
-        {
-            var dateTime = new DateTime(System.Math.Min(System.Math.Max(time * _timeAccuracy, DateTime.MinValue.Ticks), DateTime.MaxValue.Ticks), DateTimeKind.Utc);
-            var offset = CurrentTimeZone.GetUtcOffset(dateTime).Ticks / _timeAccuracy;
-            return offset;
-        }
-
-        private void offsetTimeValue(JSValue value, long amort, long mul)
-        {
-            if (value == null
-               || !value.Defined
-               || (value._valueType == JSValueType.Double && (double.IsNaN(value._dValue) || double.IsInfinity(value._dValue))))
-            {
-                _error = true;
-                _time = 0;
-            }
-            else
-            {
-                this._time = this._time - amort + Tools.JSObjectToInt64(value) * mul;
-                if (this._time < 5992660800000)
-                    _error = true;
+                value =  createDate(y, m, d, h, n, s, ms);
             }
         }
 
@@ -224,260 +208,163 @@ namespace NiL.JS.BaseLibrary
         [DoNotEnumerate]
         public JSValue getTime()
         {
-            if (_error)
+            if (isError)
                 return double.NaN;
+            return valueInTicks(value);
+        }
 
-            return _time - _unixTimeBase;
+        private static double valueInTicks(DateTime t)
+        {
+            return System.Math.Floor(t.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds);
         }
 
         [DoNotEnumerate]
         public static JSValue now()
         {
-            var time = DateTime.Now.Ticks / 10000;
-            var timeZoneOffset = CurrentTimeZone.GetUtcOffset(DateTime.Now).Ticks / 10000;
-            return time - timeZoneOffset - _unixTimeBase;
+            return valueInTicks(DateTime.Now);
         }
 
         [DoNotEnumerate]
         public JSValue getTimezoneOffset()
         {
-            if (_error)
+            if (isError)
                 return Number.NaN;
-
-            var res = -_timeZoneOffset / _minuteMillisecond;
-            return (int)res;
+            return -(int)TimeZoneInfo.Local.GetUtcOffset(value).TotalMinutes;
         }
 
         [DoNotEnumerate]
         public JSValue getYear()
         {
-            return getFullYear();
+            return getPart('Y', false)-1900;
         }
 
         [DoNotEnumerate]
         public JSValue getFullYear()
         {
-            if (_error)
-                return Number.NaN;
-            return getYearImpl(true);
+            return getPart('Y', false);
         }
 
-        private int getYearImpl(bool withTzo)
+        private int getPart(char part, bool isUTC)
         {
-            var t = _time;
-            if (withTzo)
-                t += _timeZoneOffset;
+            var from = isUTC ? value.ToUniversalTime() : value.ToLocalTime();
+            switch (part)
+            {
+                case 'Y': return from.Year;
+                case 'M': return from.Month-1;
+                case 'D': return from.Day;
+                case 'h': return from.Hour;
+                case 'm': return from.Minute;
+                case 's': return from.Second;
+                case 'n': return from.Millisecond;
+                case 'd': return (int)from.DayOfWeek;
+                default: throw new Exception("Invalid date part requested");
+            }
+        }
 
-            var y = (t / _400yearsMilliseconds) * 400;
-            t %= _400yearsMilliseconds;
-            y += System.Math.Min(3, t / _100yearsMilliseconds) * 100;
-            t -= System.Math.Min(3, t / _100yearsMilliseconds) * _100yearsMilliseconds;
-            y += (t / _4yearsMilliseconds) * 4; // 25 никогда не будет, так как 25 * _4yearsMilliseconds > _100yearsMilliseconds
-            t %= _4yearsMilliseconds;
-            y += System.Math.Min(3, t / _yearMilliseconds) + 1;
-            return (int)y; // base date: 0001-01-01
+        private void setPart(char part, int amount, bool isUTC)
+        {
+            var from = isUTC ? value.ToUniversalTime() : value.ToLocalTime();
+            switch (part)
+            {
+                case 'Y': value = new DateTime(amount, from.Month,from.Day,from.Hour,from.Minute,from.Second,from.Millisecond, isUTC ? DateTimeKind.Utc : DateTimeKind.Local); break;
+                case 'M': value = new DateTime(from.Year, amount+1,from.Day,from.Hour,from.Minute,from.Second,from.Millisecond, isUTC ? DateTimeKind.Utc : DateTimeKind.Local); break;
+                case 'D': value = new DateTime(from.Year, from.Month,amount,from.Hour,from.Minute,from.Second,from.Millisecond, isUTC ? DateTimeKind.Utc : DateTimeKind.Local); break;
+                case 'h': value = new DateTime(from.Year, from.Month,from.Day,amount,from.Minute,from.Second,from.Millisecond, isUTC ? DateTimeKind.Utc : DateTimeKind.Local); break;
+                case 'm': value = new DateTime(from.Year, from.Month,from.Day,from.Hour,amount,from.Second,from.Millisecond, isUTC ? DateTimeKind.Utc : DateTimeKind.Local); break;
+                case 's': value = new DateTime(from.Year, from.Month,from.Day,from.Hour,from.Minute,amount,from.Millisecond, isUTC ? DateTimeKind.Utc : DateTimeKind.Local); break;
+                case 'n': value = new DateTime(from.Year, from.Month,from.Day,from.Hour,from.Minute,from.Second,amount, isUTC ? DateTimeKind.Utc : DateTimeKind.Local); break;
+                default: throw new Exception("Invalid date part specified");
+            }
         }
 
         [DoNotEnumerate]
         public JSValue getUTCFullYear()
         {
-            if (_error)
-                return Number.NaN;
-
-            return getYearImpl(false);
+            return getPart('Y', true);
         }
 
         [DoNotEnumerate]
         public JSValue getMonth()
         {
-            if (_error)
-                return Number.NaN;
-
-            return getMonthImpl(true);
-        }
-
-        private int getMonthImpl(bool withTzo)
-        {
-            var t = _time;
-            if (withTzo)
-                t += _timeZoneOffset;
-
-            while (t < 0)
-                t += _400yearsMilliseconds * 7;
-
-            var y = (t / _400yearsMilliseconds) * 400;
-            t %= _400yearsMilliseconds;
-            y += System.Math.Min(3, t / _100yearsMilliseconds) * 100; // 4 быть не должно, ведь мы уже проверили делимость на 400
-            t -= System.Math.Min(3, t / _100yearsMilliseconds) * _100yearsMilliseconds;
-            y += (t / _4yearsMilliseconds) * 4;
-            t %= _4yearsMilliseconds;
-            y += System.Math.Min(3, t / _yearMilliseconds) + 1;
-            int isLeap = (y % 4 == 0 && y % 100 != 0) || y % 400 == 0 ? 1 : 0;
-            t -= System.Math.Min(3, t / _yearMilliseconds) * _yearMilliseconds;
-            var m = 0;
-            while (timeToMonthLengths[m][isLeap] <= t)
-                m++;
-            return m - 1;
+            return getPart('M', false);
         }
 
         [DoNotEnumerate]
         public JSValue getUTCMonth()
         {
-            return getMonth();
+            return getPart('M', true)-1;
         }
 
         [DoNotEnumerate]
         public JSValue getDate()
         {
-            if (_error)
-                return Number.NaN;
-
-            return getDateImpl(true);
-        }
-
-        private int getDateImpl(bool withTzo)
-        {
-            var t = _time;
-            if (withTzo)
-                t += _timeZoneOffset;
-
-            if (t < 0)
-                t = t + (1 - t / (_400yearsMilliseconds * 7)) * (_400yearsMilliseconds * 7);
-
-            var y = (t / _400yearsMilliseconds) * 400;
-            t %= _400yearsMilliseconds;
-            y += System.Math.Min(3, t / _100yearsMilliseconds) * 100;
-            t -= System.Math.Min(3, t / _100yearsMilliseconds) * _100yearsMilliseconds;
-            y += (t / _4yearsMilliseconds) * 4;
-            t %= _4yearsMilliseconds;
-            y += System.Math.Min(3, t / _yearMilliseconds) + 1;
-            int isLeap = (y % 4 == 0 && y % 100 != 0) || y % 400 == 0 ? 1 : 0;
-            t -= System.Math.Min(3, t / _yearMilliseconds) * _yearMilliseconds;
-            var m = 0;
-            while (timeToMonthLengths[m][isLeap] <= t)
-                m++;
-            if (m > 0)
-                t -= timeToMonthLengths[m - 1][isLeap];
-            return (int)(t / _dayMilliseconds + 1);
+            return getPart('D', false);
         }
 
         [DoNotEnumerate]
         public JSValue getUTCDate()
         {
-            return getDateImpl(false);
+            return getPart('D', true);
         }
 
         [DoNotEnumerate]
         public JSValue getDay()
         {
-            return getDayImpl(true);
+            return getPart('d', false);
         }
 
         [DoNotEnumerate]
         public JSValue getUTCDay()
         {
-            return getDayImpl(false);
-        }
-
-        private int getDayImpl(bool withTzo)
-        {
-            var t = System.Math.Abs(_time + (withTzo ? _timeZoneOffset : 0));
-            return (int)((t / _dayMilliseconds + 1) % 7);
+            return getPart('d',true);
         }
 
         [DoNotEnumerate]
         public JSValue getHours()
         {
-            if (_error)
-                return Number.NaN;
-
-            return getHoursImpl(true);
-        }
-
-        private int getHoursImpl(bool withTzo)
-        {
-            var t = System.Math.Abs(_time + (withTzo ? _timeZoneOffset : 0)) % _dayMilliseconds;
-            return (int)(t / _hourMilliseconds);
+            return getPart('h', false);
         }
 
         [DoNotEnumerate]
         public JSValue getUTCHours()
         {
-            if (_error)
-                return Number.NaN;
-
-            return getHoursImpl(false);
+            return getPart('h', true);
         }
 
         [DoNotEnumerate]
         public JSValue getMinutes()
         {
-            if (_error)
-                return Number.NaN;
-
-            return getMinutesImpl(true);
-        }
-
-        private int getMinutesImpl(bool withTzo)
-        {
-            var t = System.Math.Abs(_time + (withTzo ? _timeZoneOffset : 0)) % _hourMilliseconds;
-            return (int)(t / _minuteMillisecond);
+            return getPart('m', false);
         }
 
         [DoNotEnumerate]
         public JSValue getUTCMinutes()
         {
-            if (_error)
-                return Number.NaN;
-
-            return getMinutesImpl(false);
+            return getPart('m', true);
         }
 
         [DoNotEnumerate]
         public JSValue getSeconds()
         {
-            if (_error)
-                return Number.NaN;
-
-            return getSecondsImpl();
-        }
-
-        private int getSecondsImpl()
-        {
-            var t = System.Math.Abs(_time);
-            t %= _minuteMillisecond;
-            return (int)(t / 1000);
+            return getPart('s', false);
         }
 
         [DoNotEnumerate]
         public JSValue getUTCSeconds()
         {
-            return getSeconds();
+            return getPart('s', true);
         }
 
         [DoNotEnumerate]
         public JSValue getMilliseconds()
         {
-            if (_error)
-                return Number.NaN;
-
-            return getMillisecondsImpl();
-        }
-
-        private int getMillisecondsImpl()
-        {
-            var t = System.Math.Abs(_time);
-            t %= _minuteMillisecond;
-            return (int)(t % 1000);
+            return getPart('n', false);
         }
 
         [DoNotEnumerate]
         public JSValue getUTCMilliseconds()
         {
-            if (_error)
-                return Number.NaN;
-
-            return getMillisecondsImpl();
+            return getPart('n', true);
         }
 
         [DoNotEnumerate]
@@ -487,13 +374,11 @@ namespace NiL.JS.BaseLibrary
                 || !time.Defined
                 || (time._valueType == JSValueType.Double && (double.IsNaN(time._dValue) || double.IsInfinity(time._dValue))))
             {
-                _error = true;
-                this._time = 0;
+                value = _error;
             }
             else
             {
-                this._time = Tools.JSObjectToInt64(time) + _unixTimeBase + _timeZoneOffset;
-                _error = this._time < 5992660800000;
+                this.value = msToDateTime(Tools.JSObjectToInt64(time));
             }
             return getTime();
         }
@@ -501,125 +386,115 @@ namespace NiL.JS.BaseLibrary
         [DoNotEnumerate]
         public JSValue setMilliseconds(JSValue milliseconds)
         {
-            offsetTimeValue(milliseconds, getMillisecondsImpl(), 1);
-            return getMilliseconds();
+            setPart('n', Tools.JSObjectToInt32(milliseconds), false);
+            return DateTimeToMs(value);
         }
 
         [DoNotEnumerate]
         public JSValue setUTCMilliseconds(JSValue milliseconds)
         {
-            return setMilliseconds(milliseconds);
+            setPart('n', Tools.JSObjectToInt32(milliseconds), true);
+            return DateTimeToMs(value);
         }
 
         [DoNotEnumerate]
         public JSValue setSeconds(JSValue seconds, JSValue milliseconds)
         {
             if (seconds != null && seconds.Exists)
-                offsetTimeValue(seconds, getSecondsImpl(), 1000);
-            if (!_error && milliseconds != null && milliseconds.Exists)
-                setMilliseconds(milliseconds);
-            return getSeconds();
+                setPart('s', Tools.JSObjectToInt32(seconds), false);
+            if (!isError && milliseconds != null && milliseconds.Exists)
+                setPart('n', Tools.JSObjectToInt32(milliseconds), false);
+            return DateTimeToMs(value);
         }
 
         [DoNotEnumerate]
         public JSValue setUTCSeconds(JSValue seconds, JSValue milliseconds)
         {
-            return setSeconds(seconds, milliseconds);
+            if (seconds != null && seconds.Exists)
+                setPart('s', Tools.JSObjectToInt32(seconds), true);
+            if (!isError && milliseconds != null && milliseconds.Exists)
+                setPart('n', Tools.JSObjectToInt32(milliseconds), true);
+            return DateTimeToMs(value);
         }
 
         [DoNotEnumerate]
         public JSValue setMinutes(JSValue minutes, JSValue seconds, JSValue milliseconds)
         {
             if (minutes != null && minutes.Exists)
-                offsetTimeValue(minutes, getMinutesImpl(true), _minuteMillisecond);
-            if (!_error)
-                setSeconds(seconds, milliseconds);
-            return getMinutes();
+                setPart('m', Tools.JSObjectToInt32(minutes), false);
+            return setSeconds(seconds, milliseconds);
         }
 
         [DoNotEnumerate]
         public JSValue setUTCMinutes(JSValue minutes, JSValue seconds, JSValue milliseconds)
         {
-            return setMinutes(minutes, seconds, milliseconds);
+            if (minutes != null && minutes.Exists)
+                setPart('m', Tools.JSObjectToInt32(minutes), true);
+            return setUTCSeconds(seconds, milliseconds);
         }
 
         [DoNotEnumerate]
         public JSValue setHours(JSValue hours, JSValue minutes, JSValue seconds, JSValue milliseconds)
         {
             if (hours != null && hours.Exists)
-                offsetTimeValue(hours, getHoursImpl(true), _hourMilliseconds);
-            setMinutes(minutes, seconds, milliseconds);
-            return getHours();
+                setPart('h', Tools.JSObjectToInt32(hours), false);
+            return setMinutes(minutes, seconds, milliseconds);
         }
 
         [DoNotEnumerate]
         public JSValue setUTCHours(JSValue hours, JSValue minutes, JSValue seconds, JSValue milliseconds)
         {
-            return setHours(hours, minutes, seconds, milliseconds);
+            if (hours != null && hours.Exists)
+                setPart('h', Tools.JSObjectToInt32(hours), true);
+            return setUTCMinutes(minutes, seconds, milliseconds);
         }
 
         [DoNotEnumerate]
         public JSValue setDate(JSValue days)
         {
             if (days != null && days.Exists)
-                offsetTimeValue(days, getDateImpl(true), _dayMilliseconds);
-
-            return getDate();
+                setPart('D', Tools.JSObjectToInt32(days), false);
+            return DateTimeToMs(value);
         }
 
         [DoNotEnumerate]
         public JSValue setUTCDate(JSValue days)
         {
             if (days != null && days.Exists)
-                offsetTimeValue(days, getDateImpl(false), _dayMilliseconds);
-
-            return getDate();
+                setPart('D', Tools.JSObjectToInt32(days), true);
+            return DateTimeToMs(value);
         }
 
         [DoNotEnumerate]
-        public JSValue setMonth(JSValue month, JSValue day)
+        public JSValue setMonth(JSValue month, JSValue days)
         {
             if (month != null && month.Exists)
-            {
-                if (!month.Defined
-                || (month._valueType == JSValueType.Double && (double.IsNaN(month._dValue) || double.IsInfinity(month._dValue))))
-                {
-                    _error = true;
-                    _time = 0;
-                    return Number.NaN;
-                }
-                var intMonth = Tools.JSObjectToInt64(month);
-                if (intMonth < 0 || intMonth > 12)
-                {
-                    this._time = this._time - timeToMonthLengths[getMonthImpl(true)][isLeap(getYearImpl(true)) ? 1 : 0];
-                    _time = dateToMilliseconds(getYearImpl(true), intMonth, getDateImpl(true), getHoursImpl(true), getMinutesImpl(true), getSecondsImpl(), getMillisecondsImpl());
-                }
-                else
-                    this._time = this._time - timeToMonthLengths[getMonthImpl(true)][isLeap(getYearImpl(true)) ? 1 : 0] + timeToMonthLengths[intMonth][isLeap(getYearImpl(true)) ? 1 : 0];
-            }
-            if (day != null)
-                setDate(day);
-            return getMonth();
+                setPart('M', Tools.JSObjectToInt32(month), false);
+            return setDate(days);
         }
 
         [DoNotEnumerate]
-        public JSValue setUTCMonth(JSValue monthO, JSValue day)
+        public JSValue setUTCMonth(JSValue month, JSValue days)
         {
-            return setMonth(monthO, day);
+            if (month != null && month.Exists)
+                setPart('M', Tools.JSObjectToInt32(month), true);
+            return setUTCDate(days);
         }
 
         [DoNotEnumerate]
         public JSValue setYear(JSValue year)
         {
-            _time = dateToMilliseconds(Tools.JSObjectToInt64(year) + 1900, getMonthImpl(true), getDateImpl(true), getHoursImpl(true), getMinutesImpl(true), getSecondsImpl(), getMillisecondsImpl());
-            return year;
+            if (year != null && year.Exists)
+                setPart('Y', Tools.JSObjectToInt32(year), false);
+            return DateTimeToMs(value);
         }
 
         [DoNotEnumerate]
         public JSValue setUTCYear(JSValue year)
         {
-            _time = dateToMilliseconds(Tools.JSObjectToInt64(year) + 1900, getMonthImpl(false), getDateImpl(false), getHoursImpl(false), getMinutesImpl(false), getSecondsImpl(), getMillisecondsImpl());
-            return year;
+            if (year != null && year.Exists)
+                setPart('Y', Tools.JSObjectToInt32(year), true);
+            return DateTimeToMs(value);
         }
 
         [DoNotEnumerate]
@@ -627,19 +502,11 @@ namespace NiL.JS.BaseLibrary
         {
             if (year != null && year.Exists)
             {
-                if (!year.Defined
-                   || (year._valueType == JSValueType.Double && (double.IsNaN(year._dValue) || double.IsInfinity(year._dValue))))
-                {
-                    _error = true;
-                    _time = 0;
-                    return Number.NaN;
-                }
-                _time = dateToMilliseconds(Tools.JSObjectToInt64(year), getMonthImpl(false), getDateImpl(false), getHoursImpl(false), getMinutesImpl(false), getSecondsImpl(), getMillisecondsImpl());
-                _error = this._time < 5992660800000;
+                setPart('Y', Tools.JSObjectToInt32(year), true);
+                return setMonth(month, day);
             }
-            if (!_error)
-                setMonth(month, day);
-            return getFullYear();
+            value = _error;
+            return DateTimeToMs(value);
         }
 
         [DoNotEnumerate]
@@ -655,117 +522,22 @@ namespace NiL.JS.BaseLibrary
             return ToString();
         }
 
-        [Hidden]
-        public DateTime ToDateTime()
-        {
-            var y = getYearImpl(true);
-            while (y > 2800)
-                y -= 2800;
-            while (y < 0)
-                y += 2800;
-            var dt = new DateTime(0, DateTimeKind.Local);
-            dt = dt.AddDays(getDateImpl(true) - 1);
-            dt = dt.AddMonths(getMonthImpl(true));
-            dt = dt.AddYears(y - 1);
-            dt = dt.AddHours(getHoursImpl(true));
-            dt = dt.AddMinutes(getMinutesImpl(true));
-            dt = dt.AddSeconds(getSecondsImpl());
-            dt = dt.AddMilliseconds(getMillisecondsImpl());
-            return dt;
-        }
-
         [DoNotEnumerate]
         public JSValue toLocaleString()
         {
-            var dt = ToDateTime();
-            return dt.ToString();
+            return value.ToString("d") + ", " + value.ToString("HH:mm:ss");
         }
 
         [DoNotEnumerate]
         public JSValue toLocaleTimeString()
         {
-            var res =
-                getHoursImpl(true).ToString("00:")
-                + getMinutesImpl(true).ToString("00:")
-                + getSecondsImpl().ToString("00");
-            return res;
+            return value.ToString("HH:mm:ss");
         }
 
         [DoNotEnumerate]
         public JSValue toISOString()
         {
-            return toIsoString();
-        }
-
-        private JSValue toIsoString()
-        {
-            if ((_time + _timeZoneOffset) > 8702135600400000 || (_time + _timeZoneOffset) < -8577864403200000 || _error)
-                ExceptionHelper.Throw(new RangeError("Invalid time value"));
-
-            var y = getYearImpl(false);
-
-            return y +
-                    "-" + (this.getMonthImpl(false) + 1).ToString("00") +
-                    "-" + this.getDateImpl(false).ToString("00") +
-                    "T" + this.getHoursImpl(false).ToString("00") +
-                    ":" + this.getMinutesImpl(false).ToString("00") +
-                    ":" + this.getSecondsImpl().ToString("00") +
-                    "." + (this.getMillisecondsImpl() / 1000.0).ToString(".000", System.Globalization.CultureInfo.InvariantCulture).Substring(1) +
-                    "Z";
-        }
-
-        private string stringify(bool withTzo)
-        {
-            if (_error)
-                return "Invalid date";
-
-            return stringifyDate(withTzo) + " " + stringifyTime(withTzo);
-        }
-
-        private string stringifyDate(bool withTzo)
-        {
-            if (_error)
-                return "Invalid date";
-
-            var res =
-                withTzo
-                    ? daysOfWeek[(getDayImpl(true) + 6) % 7] + " "
-                                                                + months[getMonthImpl(true)]
-                                                                + " " 
-                                                                + getDateImpl(true).ToString("00") 
-                                                                + " "
-                                                                + getYearImpl(true)
-                    : daysOfWeek[(getDayImpl(false) + 6) % 7] + ", "
-                                                                + getDateImpl(false).ToString("00")
-                                                                + " "
-                                                                + months[getMonthImpl(false)]
-                                                                + " "
-                                                                + getYearImpl(false);
-            return res;
-        }
-
-        private string stringifyTime(bool withTzo)
-        {
-            if (_error)
-                return "Invalid date";
-
-            var offset = new TimeSpan(_timeZoneOffset * _timeAccuracy);
-            var timeName = CurrentTimeZone.IsDaylightSavingTime(new DateTimeOffset(_time * _timeAccuracy, offset)) ? CurrentTimeZone.DaylightName : CurrentTimeZone.StandardName;
-            var res = getHoursImpl(withTzo).ToString("00:")
-                      + getMinutesImpl(withTzo).ToString("00:")
-                      + getSecondsImpl().ToString("00")
-                      + " GMT"
-                      + (withTzo
-                          ? (offset.Ticks > 0 ? "+" : "") + (offset.Hours * 100 + offset.Minutes).ToString("0000") +
-                            " (" + timeName + ")"
-                          : "");
-            return res;
-        }
-
-        [Hidden]
-        public override string ToString()
-        {
-            return stringify(true);
+            return value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
         }
 
         [DoNotEnumerate]
@@ -777,54 +549,51 @@ namespace NiL.JS.BaseLibrary
         [DoNotEnumerate]
         public JSValue toUTCString()
         {
-            return stringify(false);
+            return value.ToUniversalTime().ToString(@"ddd, d MMM yyyy HH:mm:ss \G\M\T");
         }
 
         [DoNotEnumerate]
         public JSValue toGMTString()
         {
-            return stringify(false);
+            return value.ToUniversalTime().ToString(@"ddd, d MMM yyyy HH:mm:ss \G\M\T");
         }
 
         [DoNotEnumerate]
         public JSValue toTimeString()
         {
-            return stringifyTime(true);
+            var dateTime = value.ToLocalTime();
+            return dateTime.ToString("HH:mm:ss ", System.Globalization.DateTimeFormatInfo.InvariantInfo) 
+                   + FindTimezone(dateTime);
         }
 
         [DoNotEnumerate]
         public JSValue toDateString()
         {
-            return stringifyDate(true);
+            return value.ToString("ddd MMM d yyyy");
         }
 
         [DoNotEnumerate]
         public JSValue toLocaleDateString()
         {
-            var y = getYearImpl(true);
-            while (y > 2800)
-                y -= 2800;
-            while (y < 0)
-                y += 2800;
-            var dt = new DateTime(0);
-            dt = dt.AddDays(getDateImpl(true));
-            dt = dt.AddMonths(getMonthImpl(true));
-            dt = dt.AddYears(y);
-#if (PORTABLE || NETCORE)
-            return dt.ToString();
-#else
-            return dt.ToLongDateString();
-#endif
+            return value.ToString("d");
+        }
+
+        [Hidden]
+        public override string ToString()
+        {
+            if (isError)
+                return "Invalid date";
+
+            var dateTime = value.ToLocalTime();
+            return dateTime.ToString("ddd MMM dd yyyy HH:mm:ss ", System.Globalization.DateTimeFormatInfo.InvariantInfo) +
+                   FindTimezone(dateTime);
         }
 
         [DoNotEnumerate]
         public static JSValue parse(string dateTime)
         {
-            var time = 0L;
-            var tzo = 0L;
-            if (tryParse(dateTime, out time, out tzo))
-                return time - tzo - _unixTimeBase;
-            return double.NaN;
+            var guess = tryParse(dateTime);
+            return guess==_error ? Number.NaN : DateTimeToMs(guess);
         }
 
         [DoNotEnumerate]
@@ -833,14 +602,8 @@ namespace NiL.JS.BaseLibrary
         {
             try
             {
-                return dateToMilliseconds(
-                    Tools.JSObjectToInt64(dateTime[0], 1),
-                    Tools.JSObjectToInt64(dateTime[1]),
-                    Tools.JSObjectToInt64(dateTime[2], 1),
-                    Tools.JSObjectToInt64(dateTime[3]),
-                    Tools.JSObjectToInt64(dateTime[4]),
-                    Tools.JSObjectToInt64(dateTime[5]),
-                    Tools.JSObjectToInt64(dateTime[6])) - _unixTimeBase;
+                var d = new Date(dateTime);
+                return DateTimeToMs(d.value);
             }
             catch
             {
@@ -848,470 +611,248 @@ namespace NiL.JS.BaseLibrary
             }
         }
 
-        private static long dateToMilliseconds(long year, long month, long day, long hour, long minute, long second, long millisecond)
+
+        private static string FindTimezone(DateTime dateTime)
         {
-            while (month < 0)
-            {
-                year--;
-                month += 12;
-            }
-            year += month / 12;
-            month %= 12;
-            var isLeap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0 ? 1 : 0;
-            year--;
-            //month--; // В JS mode надо закомментировать
-            day--;
-            var time = (year / 400) * _400yearsMilliseconds;
-            year %= 400;
-            time += (year / 100) * _100yearsMilliseconds;
-            year %= 100;
-            time += (year / 4) * _4yearsMilliseconds;
-            year %= 4;
-            time += 365 * year * _dayMilliseconds;
-            time += timeToMonthLengths[month][isLeap];
-            time += day * _dayMilliseconds;
-            time += hour * _hourMilliseconds;
-            time += minute * _minuteMillisecond;
-            time += second * 1000;
-            time += millisecond;
-            return time;
+            var timeZone = TimeZoneInfo.Local;
+            int offsetInMinutes = (int)timeZone.GetUtcOffset(dateTime).TotalMinutes;
+            int hhmm = offsetInMinutes / 60 * 100 + offsetInMinutes % 60;
+            var zoneName = timeZone.IsDaylightSavingTime(dateTime) ? timeZone.DaylightName : timeZone.StandardName;
+            return string.Format(hhmm < 0 ? "GMT{0:d4} ({1})" : "GMT+{0:d4} ({1})", hhmm, zoneName);
         }
 
-        private static IEnumerable<string> tokensOf(string source)
+
+        static Regex regex = new Regex(
+            @"^((?<Y>[0-9]{4}) (-(?<M>[0-9]{2}) (-(?<D>[0-9]{2}))?)?)
+               (T (?<h>[0-9]{2}) : (?<m>[0-9]{2}) (:(?<s>[0-9]{2}) (\.(?<n>[0-9]{1,3})[0-9]*)?)?
+               (?<z>Z|(?<zh>[+-][0-9]{2}) : (?<zm>[0-9]{2}))?)?$",
+               RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+
+        private static DateTime Parse(string input)
         {
-            int position = 0;
-            int prevPos = 0;
-            while (position < source.Length)
+            var match = regex.Match(input);
+            if (match.Success)
             {
-                if (source[position] == '(' && (prevPos == position || source.IndexOf(':', prevPos, position - prevPos) == -1))
+                int Y = regValue(match, "Y", 1970);
+                int M = regValue(match, "M", 1);
+                int D = regValue(match, "D", 1);
+                int h = regValue(match, "h", 0);
+                int m = regValue(match, "m", 0);
+                int s = regValue(match, "s", 0);
+                int n = regValue(match, "n", 0);
+                int multiplier = match.Groups["n"].Value.Length;
+                n = n * (1000 - (int)System.Math.Pow(10,3-multiplier));
+
+                if (M<1 || M>12 || D < 1 || D > 31 || h > 23 || h < 0 || m > 59 || m < 0 || s > 59 || s < 0 || n > 999 || s < 0)
+                    return _error;
+
+                var zone = match.Groups["z"].Value;
+                var zonediff = 0;
+                if (!System.String.IsNullOrWhiteSpace(zone) && zone != "Z" )
                 {
-                    if (prevPos != position)
-                    {
-                        yield return source.Substring(prevPos, position - prevPos);
-                        prevPos = position;
-                    }
-                    int depth = 1;
-                    position++;
-                    while (depth > 0 && position < source.Length)
-                    {
-                        switch (source[position++])
-                        {
-                            case '(':
-                                depth++;
-                                break;
-                            case ')':
-                                depth--;
-                                break;
-                        }
-                    }
-                    prevPos = position;
-                    continue;
+                    var zm = regValue(match, "zm", 0);
+                    var zh = regValue(match, "zh", 0);
+                    if (zh > 23)
+                        return _error;
+                    if (zh > 59)
+                        return _error;
+
+                    zonediff = zh*60 + ((zh < 0) ? -zm : zm);
                 }
-                if (!Tools.IsWhiteSpace(source[position]))
+                try
                 {
-                    position++;
-                    continue;
+                    return zone=="" && match.Captures.Count>2 // Year or year+month is always UTC
+                        ? new DateTime(Y, M,D, h,m,s,n, DateTimeKind.Local)
+                        : new DateTime(Y, M,D, h,m,s,n, DateTimeKind.Utc).AddMinutes(zonediff);
                 }
-                if (prevPos != position)
+                catch (ArgumentOutOfRangeException)
                 {
-                    yield return source.Substring(prevPos, position - prevPos);
-                    prevPos = position;
+                    return _error;
+                }
+
+            }
+            return _error;
+        }
+
+        private static DateTime ParseRelaxed(string input)
+        {
+            var parts = new List<string>(input.Split(new [] { ' ', ',', '\t' }, StringSplitOptions.RemoveEmptyEntries));
+            int offset = 0;
+            bool isLocalTz = true;
+
+            bool haveday = false;
+            bool havemonth = false;
+            bool haveyear = false;
+            TimeSpan timepart = TimeSpan.Zero;
+            DateTime datepart = DateTime.UtcNow.Date;
+            List<int> freeform = new List<int>();
+            int index = 0;
+            while(index < parts.Count)
+            {
+                var part = parts[index++];
+                if (LocalNames.Timezones.ContainsKey(part))
+                {
+                    offset = LocalNames.Timezones[part];
+                    isLocalTz = false;
+                }
+                else if (part.StartsWith("GMT", StringComparison.OrdinalIgnoreCase) ||
+                    part.StartsWith("UTC", StringComparison.OrdinalIgnoreCase) ||
+                    part.StartsWith("+", StringComparison.OrdinalIgnoreCase) ||
+                    part.StartsWith("-", StringComparison.OrdinalIgnoreCase))
+                {
+                    var subpart = part.StartsWith("GMT") || part.StartsWith("UTC") ? part.Substring(3) : part;
+                    var tzamount = int.Parse(subpart);
+                    if (System.Math.Abs(tzamount) < 100)
+                        offset = tzamount * 60;
+                    else
+                        offset = (tzamount / 100) * 60 + (tzamount % 100);
+                    isLocalTz = false;
+                }
+                else if (part.IndexOfAny(new [] {'/', '-'}) != -1)
+                {
+                    if (DateTime.TryParse(part, out datepart))
+                        haveday = havemonth = haveyear = true;
+                    else // Not a format we recognise
+                        parts.AddRange(part.Split(new [] { '/', '-', '.' }, StringSplitOptions.RemoveEmptyEntries));
+                }
+                else if (part.Equals("PM", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (timepart.Hours < 12)
+                        timepart = timepart.Add(TimeSpan.FromHours(12));
+                }
+                else if (part.Equals("AM", StringComparison.OrdinalIgnoreCase))
+                { } //Ignore
+                else if (part.IndexOf(':') >= 0)
+                {
+                    timepart = DateTime.Parse(part).TimeOfDay;
+                }
+                else if (LocalNames.Months.ContainsKey(part))
+                {
+                    var month = LocalNames.Months[part];
+                    datepart = new DateTime(datepart.Year, month,datepart.Day, 0,0,0, DateTimeKind.Utc);
+                    havemonth = true;
+                }
+                else if (LocalNames.Weekdays.ContainsKey(part))
+                {
+                    // Ignore days
+                }
+                else if (part.All(Char.IsNumber))
+                {
+                    var val = int.Parse(part);
+                    freeform.Add(val);
+                }
+                else if (part.StartsWith("Z", StringComparison.OrdinalIgnoreCase))
+                {
+                    //Ignore Z (UTC)
+                }
+                else if (part.StartsWith("("))
+                {
+                    break; // Anything in parenthesis is classed as the end of the date part
                 }
                 else
-                    prevPos = ++position;
+                {
+                    // Ignore date items we don't recognise
+                }
             }
-            if (prevPos != position)
-                yield return source.Substring(prevPos);
+            
+            var result = new DateTime(datepart.Year,datepart.Month,datepart.Day, 0,0,0,isLocalTz ? DateTimeKind.Local : DateTimeKind.Utc);
+            
+            // Check numbers scattered around to identify possible years/month/day
+            foreach (var val in freeform)
+            {
+                if (val < 13 && !havemonth)
+                {
+                    result = new DateTime(result.Year, val, result.Day, result.Hour, result.Minute, result.Second,
+                        result.Millisecond, DateTimeKind.Utc);
+                    havemonth = true;
+                }
+                else if (val < 32 && !haveday)
+                {
+                    result = new DateTime(result.Year, result.Month, val, result.Hour, result.Minute, result.Second,
+                        result.Millisecond, DateTimeKind.Utc);
+                    haveday = true;
+                }
+                else if (val > 1900)
+                {
+                    result = new DateTime(val, result.Month, result.Day, result.Hour, result.Minute, result.Second,
+                        result.Millisecond, DateTimeKind.Utc);
+                    haveyear = true;
+                }
+                else if (val >= 50 && !haveyear)
+                {
+                    result = new DateTime(val + 1900, result.Month, result.Day, result.Hour, result.Minute,
+                        result.Second, result.Millisecond, DateTimeKind.Utc);
+                    haveyear = true;
+                }
+                else if (val < 50 && !haveyear)
+                {
+                    result = new DateTime(val + 2000, result.Month, result.Day, result.Hour, result.Minute,
+                        result.Second, result.Millisecond, DateTimeKind.Utc);
+                    haveyear = true;
+                }
+            }
+
+            result = result.Date.Add(timepart);
+            
+            return isLocalTz ? result : result.ToUniversalTime().AddMinutes(-offset);
+            //return isLocalTz ? result.Add(result.Subtract(result.ToLocalTime())) : result.AddMinutes(-offset);
         }
 
-        private static int indexOf(IList<string> list, string value, bool ignoreCase)
+
+
+        private static int regValue(Match match, string field, int def)
         {
-            for (var i = 0; i < list.Count; i++)
-                if (string.Compare(list[i], value, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0)
-                    return i;
-            return -1;
+            return int.TryParse(match.Groups[field].Value, out int value) ? value : def;
         }
 
-        private static bool parseSelf(string timeStr, out long time, out long timeZoneOffset)
+        private class LocalNames
         {
-            timeStr = timeStr.Trim(Tools.TrimChars);
-            if (string.IsNullOrEmpty(timeStr))
+            public static readonly Dictionary<string, int> Weekdays = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            public static readonly Dictionary<string, int> Months = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            public static readonly Dictionary<string, int> Timezones;
+
+            static LocalNames()
             {
-                time = 0;
-                timeZoneOffset = 0;
-                return false;
+                var sname = CultureInfo.InvariantCulture.DateTimeFormat.AbbreviatedMonthNames;
+                var lname = CultureInfo.InvariantCulture.DateTimeFormat.MonthNames;
+                for (int i = 0; i < 12; i++)
+                {
+                    Months[sname[i]] = i+1;
+                    Months[lname[i]] = i+1;
+                }
+
+                var wnames = CultureInfo.InvariantCulture.DateTimeFormat.AbbreviatedDayNames;
+                var wnamel = CultureInfo.InvariantCulture.DateTimeFormat.DayNames;
+                for (int i = 0; i < 7; i++)
+                {
+                    Weekdays[wnames[i]] = i;
+                    Weekdays[wnamel[i]] = i;
+                }
+
+                Timezones = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    {"M", -12*60},
+                    {"PST", -8*60},
+                    {"PDT", -7*60},
+                    {"MST", -7*60},
+                    {"MDT", -6*60},
+                    {"CST", -6*60},
+                    {"EST", -5*60},
+                    {"CDT", -5*60},
+                    {"EDT", -4*60},
+                    {"A", -1*60},
+                    {"UT", 0},
+                    {"UTC", 0},
+                    {"GMT", 0},
+                    {"Z", 0},
+                    {"N", 1*60},
+                    {"Y", 12*60}
+                };
+
+
             }
-
-            time = 0;
-            timeZoneOffset = 0;
-            bool wasForceMonth = false;
-            bool wasMonth = false;
-            bool wasDay = false;
-            bool wasYear = false;
-            bool wasTZ = false;
-            bool wasTzo = false;
-            int month = 0;
-            int year = 0;
-            int day = 1;
-            string[] timeTokens = null;
-            int tzoH = 0;
-            int tzoM = 0;
-            int temp = 0;
-            bool pm = false;
-            foreach (var token in tokensOf(timeStr))
-            {
-                if (indexOf(daysOfWeek, token, true) != -1)
-                    continue;
-
-                var index = indexOf(months, token, true);
-                if (index != -1)
-                {
-                    if (wasMonth)
-                    {
-                        if (wasForceMonth
-                            || (wasDay && wasYear))
-                            return false;
-
-                        if (!wasDay)
-                        {
-                            day = month;
-                            wasDay = true;
-                        }
-                        else if (!wasYear)
-                        {
-                            year = month;
-                            wasYear = true;
-                        }
-                        else
-                            return false;
-                    }
-
-                    wasForceMonth = true;
-                    wasMonth = true;
-                    month = index + 1;
-                    continue;
-                }
-
-                if (int.TryParse(token, out index))
-                {
-                    if (!wasMonth && index <= 12 && index > 0)
-                    {
-                        month = index;
-                        wasMonth = true;
-                        continue;
-                    }
-
-                    if (!wasDay && index > 0 && index <= 31)
-                    {
-                        day = index;
-                        wasDay = true;
-                        continue;
-                    }
-
-                    if (!wasYear)
-                    {
-                        if ((wasDay || wasMonth)
-                            && (!wasDay || !wasMonth))
-                            return false;
-                        year = index;
-                        wasYear = true;
-                        continue;
-                    }
-
-                    return false;
-                }
-
-                if (token.IndexOf(':') != -1)
-                {
-                    if (timeTokens != null)
-                        return false;
-
-                    timeTokens = token.Split(':');
-                    continue;
-                }
-
-                if (token.StartsWith("gmt", StringComparison.OrdinalIgnoreCase)
-                    || (token.StartsWith("ut", StringComparison.OrdinalIgnoreCase) && (token.Length == 2 || token[2] == 'c' || token[2] == 'C'))
-                    || token.StartsWith("pst", StringComparison.OrdinalIgnoreCase)
-                    || token.StartsWith("pdt", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (wasTZ)
-                        return false;
-
-                    if (token.Length <= 3)
-                    {
-                        // time zone offset
-                    }
-                    else
-                    {
-                        if (wasTzo)
-                            return false;
-                        if (!int.TryParse(token.Substring(3), out temp))
-                            return false;
-                        tzoM += temp % 100;
-                        tzoH += temp / 100;
-                    }
-                    if (token.StartsWith("pst", StringComparison.OrdinalIgnoreCase))
-                        tzoH -= 8;
-                    if (token.StartsWith("pdt", StringComparison.OrdinalIgnoreCase))
-                        tzoH -= 7;
-                    wasTZ = true;
-                    continue;
-                }
-
-                if (!wasTzo && (token[0] == '+' || token[0] == '-') && int.TryParse(token.Substring(3), out temp))
-                {
-                    tzoM += temp % 100;
-                    tzoH += temp / 100;
-                    wasTzo = true;
-                    wasTZ = true;
-                    continue;
-                }
-
-                if (string.Compare("am", token, StringComparison.OrdinalIgnoreCase) == 0)
-                    continue;
-
-                if (string.Compare("pm", token, StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    pm = true;
-                    continue;
-                }
-
-                if (wasDay)
-                    return false;
-            }
-
-            try
-            {
-                if (!wasDay && !wasMonth && !wasYear && timeTokens == null)
-                    return false;
-
-                if ((wasDay || wasMonth || wasYear)
-                    && (!wasDay || !wasMonth || !wasYear))
-                    return false;
-
-                if (year < 100)
-                    year += (DateTime.Now.Year / 100) * 100;
-
-                time = dateToMilliseconds(year, month - 1, day,
-                    timeTokens != null && timeTokens.Length > 0 ? (long)double.Parse(timeTokens[0]) - tzoH : -tzoH,
-                    timeTokens != null && timeTokens.Length > 1 ? (long)double.Parse(timeTokens[1]) - tzoM : -tzoM,
-                    timeTokens != null && timeTokens.Length > 2 ? (long)double.Parse(timeTokens[2]) : 0,
-                    timeTokens != null && timeTokens.Length > 3 ? (long)double.Parse(timeTokens[3]) : 0);
-
-                if (pm)
-                    time += _hourMilliseconds * 12;
-
-                timeZoneOffset = CurrentTimeZone.GetUtcOffset(new DateTime(time * _timeAccuracy)).Ticks / 10000;
-                if (wasTZ)
-                    time += timeZoneOffset;
-            }
-            catch
-            {
-                return false;
-            }
-
-            return true;
         }
 
-        private static bool parseIso8601(string timeStr, out long time, out long timeZoneOffset)
-        {
-            const string format = "YYYY|-MM|-DD|T|HH|:MM|:SS|.SSS";
-
-            time = 0;
-            timeZoneOffset = 0;
-
-            var year = 0;
-            var month = int.MinValue;
-            var day = int.MinValue;
-            var hour = 0;
-            var minutes = 0;
-            var seconds = 0;
-            var milliseconds = 0;
-            var computeTzo = false;
-            var part = 0; // 0 - дата, 1 - время, 2 - миллисекунды
-            var i = 0;
-            var j = 0;
-            for (; i < format.Length; i++, j++)
-            {
-                if (timeStr.Length <= j)
-                {
-                    if (format[i] == '|')
-                        break;
-                    else
-                        return false;
-                }
-
-                switch (char.ToLowerInvariant(format[i]))
-                {
-                    case 'y':
-                    {
-                        if (part != 0)
-                            return false;
-                        if (!Tools.IsDigit(timeStr[j]))
-                            return false;
-                        year = year * 10 + timeStr[j] - '0';
-                        break;
-                    }
-                    case 'm':
-                    {
-                        if (!Tools.IsDigit(timeStr[j]))
-                            return false;
-                        switch (part)
-                        {
-                            case 0:
-                            {
-                                if (month == int.MinValue)
-                                    month = 0;
-                                month = month * 10 + timeStr[j] - '0';
-                                break;
-                            }
-                            case 1:
-                            {
-                                minutes = minutes * 10 + timeStr[j] - '0';
-                                break;
-                            }
-                            default:
-                                return false;
-                        }
-                        break;
-                    }
-                    case 'd':
-                    {
-                        if (part != 0)
-                            return false;
-
-                        if (!Tools.IsDigit(timeStr[j]))
-                            return false;
-
-                        if (day == int.MinValue)
-                            day = 0;
-
-                        day = day * 10 + timeStr[j] - '0';
-                        break;
-                    }
-                    case 'h':
-                    {
-                        if (part != 1)
-                            return false;
-                        if (!Tools.IsDigit(timeStr[j]))
-                            return false;
-                        hour = hour * 10 + timeStr[j] - '0';
-                        break;
-                    }
-                    case 's':
-                    {
-                        if (part < 1)
-                            return false;
-                        if (!Tools.IsDigit(timeStr[j]))
-                            return false;
-                        if (part == 1)
-                            seconds = seconds * 10 + timeStr[j] - '0';
-                        else
-                            milliseconds = milliseconds * 10 + timeStr[j] - '0';
-                        break;
-                    }
-                    case ':':
-                    {
-                        if (part != 1)
-                            return false;
-                        if (format[i] != timeStr[j])
-                            return false;
-                        break;
-                    }
-                    case '/':
-                    {
-                        if (part != 0)
-                            return false;
-                        if (format[i] != timeStr[j])
-                            return false;
-                        break;
-                    }
-                    case ' ':
-                    {
-                        if (format[i] != timeStr[j])
-                            return false;
-                        while (j < timeStr.Length && Tools.IsWhiteSpace(timeStr[j]))
-                            j++;
-                        j--;
-                        break;
-                    }
-                    case '-':
-                    {
-                        if (format[i] != timeStr[j])
-                            return false;
-                        break;
-                    }
-                    case 't':
-                    {
-                        if (part != 0)
-                            return false;
-
-                        if (char.ToLowerInvariant(timeStr[j]) != 't' && !char.IsWhiteSpace(timeStr[j]))
-                            return false;
-
-                        computeTzo = char.ToLowerInvariant(timeStr[j]) != 't';
-
-                        part++;
-                        break;
-                    }
-                    case '.':
-                    {
-                        if ('.' != timeStr[j])
-                        {
-                            if (char.ToLowerInvariant(timeStr[j]) == 'z')
-                            {
-                                j = timeStr.Length;
-                                i = format.Length;
-                                break;
-                            }
-                            return false;
-                        }
-                        if (part != 1)
-                            return false;
-                        else
-                        {
-                            part++;
-                            break;
-                        }
-                    }
-                    case '|':
-                    {
-                        j--;
-                        break;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            if (j < timeStr.Length && char.ToLowerInvariant(timeStr[j]) != 'z')
-                return false;
-            if (month == int.MinValue)
-                month = 1;
-            if (day == int.MinValue)
-                day = 1;
-            if (year < 100)
-                year += (DateTime.Now.Year / 100) * 100;
-            time = dateToMilliseconds(year, month - 1, day, hour, minutes, seconds, milliseconds);
-
-            if (computeTzo)
-            {
-                timeZoneOffset = CurrentTimeZone.GetUtcOffset(new DateTime(time * _timeAccuracy)).Ticks / 10000;
-                time -= timeZoneOffset;
-            }
-
-            return true;
-        }
-
-        private static bool tryParse(string timeString, out long time, out long tzo)
-        {
-            return parseIso8601(timeString, out time, out tzo) || parseSelf(timeString, out time, out tzo);
-        }
-
-        private static bool isLeap(int year)
-        {
-            return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
-        }
 
         #region Do not remove
 
@@ -1328,5 +869,10 @@ namespace NiL.JS.BaseLibrary
         }
 
         #endregion
+
+        public DateTime ToDateTime()
+        {
+            return value;
+        }
     }
 }

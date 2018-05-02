@@ -10,6 +10,21 @@ namespace IntegrationTests.BaseLibrary
     public class DateTests
     {
         [TestMethod]
+        public void ShouldParseUSformat()
+        {
+            var date = new Date(new Arguments { "10/31/2010 08:00" });
+            Assert.AreEqual(date.ToDateTime(), DateTime.Parse("2010-10-31 08:00"));
+        }
+
+        [TestMethod]
+        public void ShouldGiveISOString()
+        {
+            var expected = "1970-01-01T00:00:00.000Z";
+            var date = new Date(new Arguments { "1970"});
+            Assert.AreEqual(date.toISOString(), expected);
+        }
+
+        [TestMethod]
         public void NewDateShouldContainCurrentTime()
         {
             var dateTime = DateTime.Now;
@@ -17,7 +32,7 @@ namespace IntegrationTests.BaseLibrary
 
             Assert.AreEqual(date.getDate(), dateTime.Day);
             Assert.AreEqual((int)date.getMonth().Value + 1, dateTime.Month);
-            Assert.AreEqual(date.getYear(), dateTime.Year);
+            Assert.AreEqual(date.getYear(), dateTime.Year-1900);
 
             Assert.AreEqual(date.getHours(), dateTime.Hour);
             Assert.AreEqual(date.getMinutes(), dateTime.Minute);
@@ -30,7 +45,7 @@ namespace IntegrationTests.BaseLibrary
             var timezone = TimeZoneInfo.GetSystemTimeZones()
                 .First(x => x.BaseUtcOffset.Ticks == 10 * 3600 * 10000000L
                        && x.Id.Contains("AUS"));
-            Date.CurrentTimeZone = timezone;
+            //Date.CurrentTimeZone = timezone;
 
             var d1 = new Date(new Arguments { 953996400000 });
             var d2 = new Date(new Arguments { 954000000000 });

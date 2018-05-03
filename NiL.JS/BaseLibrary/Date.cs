@@ -42,6 +42,7 @@ namespace NiL.JS.BaseLibrary
         private DateTime value;
         private static readonly DateTime _error = DateTime.MinValue;
         private static readonly DateTime _mindate = new DateTime(1970,1,1,0,0,0,0);
+        private static readonly DateTime _utcmindate = new DateTime(1970,1,1,0,0,0,0, DateTimeKind.Utc);
         private bool isError => (value == DateTime.MinValue);
 
         [DoNotEnumerate]
@@ -92,6 +93,13 @@ namespace NiL.JS.BaseLibrary
             if (args.length == 1)
             {
                 var arg = args[0];
+
+                if (arg.Value == null)
+                {
+                    value = _utcmindate;
+                    return;
+                }
+
                 if (arg._valueType >= JSValueType.Object)
                     arg = arg.ToPrimitiveValue_Value_String();
 
@@ -643,6 +651,8 @@ namespace NiL.JS.BaseLibrary
                 int multiplier = match.Groups["n"].Value.Length;
                 n = n * (1000 - (int)System.Math.Pow(10,3-multiplier));
 
+                bool hastime = !string.IsNullOrWhiteSpace(match.Groups["h"].Value);
+                
                 if (M<1 || M>12 || D < 1 || D > 31 || h > 23 || h < 0 || m > 59 || m < 0 || s > 59 || s < 0 || n > 999 || s < 0)
                     return _error;
 
@@ -661,7 +671,7 @@ namespace NiL.JS.BaseLibrary
                 }
                 try
                 {
-                    return zone=="" && match.Captures.Count>2 // Year or year+month is always UTC
+                    return zone=="" && hastime // Times without any time are classed as UTC by default
                         ? new DateTime(Y, M,D, h,m,s,n, DateTimeKind.Local)
                         : new DateTime(Y, M,D, h,m,s,n, DateTimeKind.Utc).AddMinutes(zonediff);
                 }

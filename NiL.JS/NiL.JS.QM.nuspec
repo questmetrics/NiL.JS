@@ -3,15 +3,15 @@
   <metadata>
     <id>NiL.JS.QM</id>
     <version>$version$</version>
-    <title>NiL.JS Engine</title>
-    <authors>NiLProject</authors>
-    <owners>NiLProject</owners>
+    <title>QuestMetrics build of NiL.JS Engine</title>
+    <authors>NiLProject, Jason Sobell</authors>
+    <owners>NiLProject, Jason Sobell</owners>
     <iconUrl>https://raw.githubusercontent.com/nilproject/NiL.JS/5b0c4730e1e0a23adb95fdc147376065676d8e2c/nil.js%20logo%20small.png</iconUrl>
     <licenseUrl>https://github.com/nilproject/NiL.JS/blob/develop/License</licenseUrl>
-    <projectUrl>https://github.com/nilproject/NiL.JS</projectUrl>
+    <projectUrl>https://github.com/questmetrics/NiL.JS.QM</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>ES2015 (JavaScript) engine for .NET</description>
+    <description>ES2015 (JavaScript ES6) engine for .NET</description>
     <summary>ES2015 (JavaScript) engine for .NET written on C#</summary>
-    <tags>ecmascript js javascript engine nil</tags>
+    <tags>ecmascript ES6 js javascript engine nil</tags>
   </metadata>
 </package>

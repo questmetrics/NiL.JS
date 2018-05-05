@@ -1,7 +1,0 @@
-{
-    "compilerOptions": {
-        "module": "es6",
-        "rootDir": ".",
-        "target": "ES6"
-    }
-}

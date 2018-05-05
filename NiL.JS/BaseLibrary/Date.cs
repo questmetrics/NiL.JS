@@ -11,8 +11,14 @@ namespace NiL.JS.BaseLibrary
 #endif
     public sealed class Date
     {
-        [Hidden] public static TimeZoneInfo CurrentTimeZone = TimeZoneInfo.Local;
-
+        private static TimeZoneInfo s_currentTimeZone = TimeZoneInfo.Local;
+        [Hidden]
+        public static TimeZoneInfo CurrentTimeZone
+        {
+            get => s_currentTimeZone;
+            set => s_currentTimeZone = value ?? throw new ArgumentNullException(nameof(value));
+        }
+        
         private const long _timeAccuracy = TimeSpan.TicksPerMillisecond;
         private const long _unixTimeBase = 62135596800000;
         private const long _minuteMillisecond = 60 * 1000;
@@ -203,6 +209,17 @@ namespace NiL.JS.BaseLibrary
             }
         }
 
+        private DateTime ToCurrentTimezone(DateTime dt)
+        {
+            return TimeZoneInfo.ConvertTime(dt, TimeZoneInfo.Utc, CurrentTimeZone);
+        }
+
+        private DateTime ToUtcTimezone(DateTime dt)
+        {
+            return TimeZoneInfo.ConvertTime(dt, CurrentTimeZone, TimeZoneInfo.Utc);
+        }
+
+        
         private void storedate(DateTime dateTime)
         {
             _time = dateTime.Ticks / _timeAccuracy;
@@ -551,7 +568,7 @@ namespace NiL.JS.BaseLibrary
             if (minutes != null && minutes.Exists)
             {
                 var newdate = setPart(ToDateTime().ToUniversalTime(), eDatepart.min, (int)minutes);
-                storedate(newdate.ToLocalTime());
+                storedate(ToCurrentTimezone(newdate));
             }
 
             if (!_error)
@@ -580,7 +597,7 @@ namespace NiL.JS.BaseLibrary
             if (hours != null && hours.Exists)
             {
                 var newdate = setPart(ToDateTime().ToUniversalTime(), eDatepart.hour, (int)hours);
-                storedate(newdate.ToLocalTime());
+                storedate(ToCurrentTimezone(newdate));
             }
 
             setUTCMinutes(minutes, seconds, milliseconds);
@@ -606,7 +623,7 @@ namespace NiL.JS.BaseLibrary
             if (days != null && days.Exists)
             {
                 var newdate = setPart(ToDateTime().ToUniversalTime(), eDatepart.date, (int)days);
-                storedate(newdate.ToLocalTime());
+                storedate(ToCurrentTimezone(newdate));
             }
 
             return valueOf();
@@ -654,7 +671,7 @@ namespace NiL.JS.BaseLibrary
 
                 var intMonth = Tools.JSObjectToInt32(month);
                 var newdate = setPart(ToDateTime().ToUniversalTime(), eDatepart.month, intMonth+1);
-                storedate(newdate.ToLocalTime());
+                storedate(ToCurrentTimezone(newdate));
             }
 
             if (day != null)
@@ -712,7 +729,7 @@ namespace NiL.JS.BaseLibrary
                 }
 
                 var newdate = setPart(ToDateTime().ToUniversalTime(), eDatepart.year, (int)year);
-                storedate(newdate.ToLocalTime());
+                storedate(ToCurrentTimezone(newdate));
             }
 
             if (!_error)
@@ -733,7 +750,7 @@ namespace NiL.JS.BaseLibrary
         public DateTime ToDateTime()
         {
             var dt = new DateTime(_time * _timeAccuracy, DateTimeKind.Utc);
-            dt = dt.ToLocalTime();
+            dt = ToCurrentTimezone(dt);
             return dt;
         }
 
@@ -821,8 +838,8 @@ namespace NiL.JS.BaseLibrary
 
             var offset = new TimeSpan(_timeZoneOffset * _timeAccuracy);
             var timeName = CurrentTimeZone.IsDaylightSavingTime(new DateTimeOffset(_time * _timeAccuracy, offset))
-                ? TimeZoneInfo.Local.DaylightName
-                : TimeZoneInfo.Local.StandardName;
+                ? CurrentTimeZone.DaylightName
+                : CurrentTimeZone.StandardName;
             var res =
                 getHoursImpl(withTzo).ToString("00:")
                 + getMinutesImpl(withTzo).ToString("00:")

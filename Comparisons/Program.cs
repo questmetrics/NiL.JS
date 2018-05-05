@@ -3,8 +3,10 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using Microsoft.ClearScript.V8;
+using NiL.JS.BaseLibrary;
 using NiL.JS.Core;
 using NiL.JS.Extensions;
+using String = System.String;
 
 namespace Comparisons
 {
@@ -17,7 +19,6 @@ namespace Comparisons
         
         public static void Main(string[] args)
         {
-
             // Warm up engines so times are synced, and create a single sample UTC date for base tests
             nil.Eval("var d = new Date(2000,1,1)");
             v8.Evaluate("var d = new Date(2000,1,1)");

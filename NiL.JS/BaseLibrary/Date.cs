@@ -11,14 +11,7 @@ namespace NiL.JS.BaseLibrary
 #endif
     public sealed class Date
     {
-        private static TimeZoneInfo s_currentTimeZone = TimeZoneInfo.Local;
-
-        [Hidden]
-        public static TimeZoneInfo CurrentTimeZone
-        {
-            get => s_currentTimeZone;
-            set => s_currentTimeZone = value ?? throw new ArgumentNullException(nameof(value));
-        }
+        [Hidden] public static TimeZoneInfo CurrentTimeZone = TimeZoneInfo.Local;
 
         private const long _timeAccuracy = TimeSpan.TicksPerMillisecond;
         private const long _unixTimeBase = 62135596800000;
@@ -286,7 +279,7 @@ namespace NiL.JS.BaseLibrary
         [DoNotEnumerate]
         public JSValue getYear()
         {
-            return getFullYear();
+            return (int)getFullYear() - 1900;
         }
 
         [DoNotEnumerate]
@@ -835,7 +828,7 @@ namespace NiL.JS.BaseLibrary
                 + getMinutesImpl(withTzo).ToString("00:")
                 + getSecondsImpl().ToString("00")
                 + " GMT" + (withTzo
-                    ? (offset.Ticks > 0 ? "+" : "") + (offset.Hours * 100 + offset.Minutes).ToString("0000") + " (" +
+                    ? (offset.Ticks >= 0 ? "+" : "") + (offset.Hours * 100 + offset.Minutes).ToString("0000") + " (" +
                       timeName + ")"
                     : "");
             return res;

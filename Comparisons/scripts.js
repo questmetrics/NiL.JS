@@ -11,6 +11,7 @@
 
 [DATE].getDate()
 [DATE].getDay()
+[DATE].getYear()
 [DATE].getFullYear()
 [DATE].getHours()
 [DATE].getMilliseconds()

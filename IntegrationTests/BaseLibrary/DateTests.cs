@@ -78,7 +78,7 @@ namespace IntegrationTests.BaseLibrary
         [TestMethod]
         public void NewDateShouldContainCurrentTime()
         {
-            var dateTime = DateTime.Now;
+            var dateTime = ConvertTimezone(DateTime.Now);
             var date = new Date();
 
             Assert.AreEqual(date.getDate(), dateTime.Day);
@@ -91,12 +91,11 @@ namespace IntegrationTests.BaseLibrary
         }
 
         [TestMethod]
-        public void ShouldCorrectHandleSwitchFromDstToStandard_SidneyTimeZone()
+        public void ShouldCorrectHandleSwitchFromDstToStandard_SydneyTimeZone()
         {
             var timezone = TimeZoneInfo.GetSystemTimeZones()
-                .First(x => x.BaseUtcOffset.Ticks == 10 * 3600 * 10000000L
-                       && x.Id.Contains("AUS"));
-            //Date.CurrentTimeZone = timezone;
+                .First(x => x.Id.Contains("AUS Eastern Standard Time"));
+            Date.CurrentTimeZone = timezone;
 
             var d1 = new Date(new Arguments { 953996400000 });
             var d2 = new Date(new Arguments { 954000000000 });
@@ -106,5 +105,29 @@ namespace IntegrationTests.BaseLibrary
             Assert.IsTrue(d2.ToString().StartsWith("Sun Mar 26 2000 02:00:00 GMT+1000"));
             Assert.IsTrue(d3.ToString().StartsWith("Sun Mar 26 2000 03:00:00 GMT+1000"));
         }
+
+        [TestMethod]
+        public void ShouldCorrectHandleSwitchFromDstToStandard_UKTimeZone()
+        {
+            var timezone = TimeZoneInfo.GetSystemTimeZones()
+                .First(x => x.Id.Contains("GMT Standard Time"));
+            Date.CurrentTimeZone = timezone;
+
+            var d1 = new Date(new Arguments { 972779400000 });
+            var d2 = new Date(new Arguments { 972781200000 });
+            var d3 = new Date(new Arguments { 972784800000 });
+
+            Assert.IsTrue(d1.ToString().StartsWith("Sun Oct 29 2000 01:30:00 GMT+0100"));
+            Assert.IsTrue(d2.ToString().StartsWith("Sun Oct 29 2000 01:00:00 GMT+0000"));
+            Assert.IsTrue(d3.ToString().StartsWith("Sun Oct 29 2000 02:00:00 GMT+0000"));
+        }
+
+        
+        
+        private DateTime ConvertTimezone(DateTime local)
+        {
+            return TimeZoneInfo.ConvertTime(local, TimeZoneInfo.Local, Date.CurrentTimeZone);
+        }
+        
     }
 }

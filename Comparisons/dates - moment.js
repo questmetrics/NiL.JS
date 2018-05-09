@@ -1,0 +1,5 @@
+moment(d)
+moment(today).tz("UTC")
+moment(today).tz("Australia/Melbourne")
+moment(today).tz("Australia/Perth")
+moment(today).tz("GMT")

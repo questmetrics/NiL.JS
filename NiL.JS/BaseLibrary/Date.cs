@@ -501,7 +501,7 @@ namespace NiL.JS.BaseLibrary
             }
             else
             {
-                this._time = Tools.JSObjectToInt64(time) + _unixTimeBase + _timeZoneOffset;
+                this._time = Tools.JSObjectToInt64(time) + _unixTimeBase;
                 _error = this._time < 5992660800000;
             }
 

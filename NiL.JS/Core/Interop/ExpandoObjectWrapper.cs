@@ -39,7 +39,7 @@ namespace NiL.JS.Core.Interop
             _target = target;
         }
 
-        internal protected override JSValue GetProperty(JSValue key, bool forWrite, PropertyScope propertyScope)
+        protected internal override JSValue GetProperty(JSValue key, bool forWrite, PropertyScope propertyScope)
         {
             if (key.ValueType == JSValueType.Symbol || propertyScope >= PropertyScope.Super)
                 return base.GetProperty(key, forWrite, propertyScope);

@@ -49,7 +49,7 @@ namespace NiL.JS.Core
         {
         }
 
-        internal protected override JSValue GetProperty(JSValue name, bool forWrite, PropertyScope memberScope)
+        protected internal override JSValue GetProperty(JSValue name, bool forWrite, PropertyScope memberScope)
         {
             var t = instance as JSValue;
             if (t != null)

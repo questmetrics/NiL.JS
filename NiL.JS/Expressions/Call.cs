@@ -117,6 +117,10 @@ namespace NiL.JS.Expressions
             }
             else if (func == null)
             {
+                checkStack();
+                Context.CurrentGlobalContext._callDepth++;
+                try
+                {
                 switch (_callMode)
                 {
                     case CallMode.Construct:
@@ -129,6 +133,11 @@ namespace NiL.JS.Expressions
                         }
                     default:
                         return callable.Call(targetObject, Tools.CreateArguments(_arguments, context));
+                }
+            }
+                finally
+                {
+                    Context.CurrentGlobalContext._callDepth--;
                 }
             }
             else
@@ -149,6 +158,9 @@ namespace NiL.JS.Expressions
                     context._objectSource = null;
 
                 checkStack();
+                Context.CurrentGlobalContext._callDepth++;
+                try
+                {
                 if (_callMode == CallMode.Construct)
                     targetObject = null;
 
@@ -156,6 +168,11 @@ namespace NiL.JS.Expressions
                     return callEval(context);
 
                 return func.InternalInvoke(targetObject, _arguments, context, withSpread, _callMode != 0);
+            }
+                finally
+                {
+                    Context.CurrentGlobalContext._callDepth--;
+                }
             }
         }
 
@@ -197,27 +214,9 @@ namespace NiL.JS.Expressions
 
         private static void checkStack()
         {
-            try
-            {
-                checkStackInternal();
-            }
-            catch
-            {
+            if (Context.CurrentGlobalContext._callDepth >= 1000)
                 throw new JSException(new RangeError("Stack overflow."));
             }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private static void checkStackInternal()
-        {
-#pragma warning disable CS0168
-            decimal f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10;
-            decimal f11, f12, f13, f14, f15, f16, f17, f18, f19;
-#pragma warning restore CS0168
-#if !(PORTABLE || NETCORE) && !NET35
-            RuntimeHelpers.EnsureSufficientExecutionStack();
-#endif
-        }
 
         public override bool Build(ref CodeNode _this, int expressionDepth, Dictionary<string, VariableDescriptor> variables, CodeContext codeContext, InternalCompilerMessageCallback message, FunctionInfo stats, Options opts)
         {

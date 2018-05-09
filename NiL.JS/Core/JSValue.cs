@@ -233,8 +233,6 @@ namespace NiL.JS.Core
                                 return (_oValue as JSObject).Value;
                             return _oValue;
                         }
-                    case JSValueType.Undefined:
-                    case JSValueType.NotExistsInObject:
                     default:
                         return null;
                 }

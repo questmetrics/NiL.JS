@@ -114,7 +114,7 @@ namespace NiL.JS.Core
                     && callerContext._owner != null
                     && callerContext._owner._functionDefinition._body._strict ? Function.propertiesDummySM : callerContext._owner;
 
-                _objectPrototype = callerContext.GlobalContext._GlobalPrototype;
+                _objectPrototype = callerContext.GlobalContext._globalPrototype;
             }
 
             suppressClone = true;
@@ -139,7 +139,7 @@ namespace NiL.JS.Core
             this[length++] = Marshal(value);
         }
 
-        internal protected override JSValue GetProperty(JSValue key, bool forWrite, PropertyScope memberScope)
+        protected internal override JSValue GetProperty(JSValue key, bool forWrite, PropertyScope memberScope)
         {
             if (forWrite)
                 cloneValues();

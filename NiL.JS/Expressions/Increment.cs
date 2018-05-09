@@ -176,8 +176,8 @@ namespace NiL.JS.Expressions
                         break;
                     }
                 case JSValueType.Undefined:
-                case JSValueType.NotExists:
                 case JSValueType.NotExistsInObject:
+                case JSValueType.NotExists:
                     {
                         val._valueType = JSValueType.Double;
                         val._dValue = double.NaN;

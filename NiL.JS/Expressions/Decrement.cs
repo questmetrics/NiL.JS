@@ -178,6 +178,7 @@ namespace NiL.JS.Expressions
                         break;
                     }
                 case JSValueType.Undefined:
+                case JSValueType.NotExists:
                 case JSValueType.NotExistsInObject:
                     {
                         val._valueType = JSValueType.Double;

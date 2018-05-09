@@ -253,6 +253,7 @@ namespace NiL.JS.Expressions
                         break;
                     }
                 case JSValueType.Undefined:
+                case JSValueType.NotExists:
                 case JSValueType.NotExistsInObject:
                     {
                         temp = _right.Evaluate(context);

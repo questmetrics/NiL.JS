@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -34,6 +33,11 @@ namespace NiL.JS.Backward
         {
             return new ReadOnlyCollection<T>(self);
         }
+
+//        internal static bool IsAssignableFrom(this Type self, Type sourceType)
+//        {
+//            return self.GetTypeInfo().IsAssignableFrom(sourceType.GetTypeInfo());
+//        }
 
         internal static bool IsSubclassOf(this Type self, Type sourceType)
         {

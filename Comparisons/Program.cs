@@ -19,49 +19,74 @@ namespace Comparisons
         
         public static void Main(string[] args)
         {
+            v8.AddHostType(typeof(Console));
+            nil.DefineConstructor(typeof(Console));
+            
             // Warm up engines so times are synced, and create a single sample UTC date for base tests
             nil.Eval("var d = new Date(2000,1,1)");
+            nil.Eval("var dump = function(...args) { var outp = JSON.stringify(args||''); console.log(outp); }");
             v8.Evaluate("var d = new Date(2000,1,1)");
+            v8.Evaluate("var dump = function(...args) { var outp = JSON.stringify(args); Console.WriteLine(outp); }");
+            nil.Eval("var Env = 'NIL'");
+            v8.Evaluate("var Env = 'V8'");
+            var today = DateTime.Now;
+            nil.Eval($"var today = new Date({today.Year},{today.Month-1},{today.Day},{today.Hour},{today.Minute},{today.Second},{today.Millisecond})");
+            v8.Evaluate($"var today = new Date({today.Year},{today.Month-1},{today.Day},{today.Hour},{today.Minute},{today.Second},{today.Millisecond})");
+
+
+            var moment = File.ReadAllText("moment.js");
+            var momenttz = File.ReadAllText("moment-timezone.js");
+
+            nil.Eval(moment);
+            nil.Eval(momenttz);
+
+            v8.Evaluate(moment);
+            v8.Evaluate(momenttz);
             
-            var dates = File.ReadAllLines("dates.js");
-            var tests = File.ReadAllLines("scripts.js");
+            var dateset = new [] { File.ReadAllLines("dates.js"), File.ReadAllLines("dates - moment.js")};
+            var testset = new [] { File.ReadAllLines("scripts.js"), File.ReadAllLines("scripts - moment.js")};
 
-            foreach (var date in dates.Where(d => !string.IsNullOrWhiteSpace(d) && !d.StartsWith("//")))
+            for (int idx = 0; idx < 2; idx++)
             {
-               
-                foreach (var line in tests)
+                var dates = dateset[idx];
+                var tests = testset[idx];
+                
+                foreach (var date in dates.Where(d => !string.IsNullOrWhiteSpace(d) && !d.StartsWith("//")))
                 {
-                    if (!string.IsNullOrWhiteSpace(line) && !line.StartsWith("//"))
+                    foreach (var line in tests)
                     {
-                        string r1, r2;
-                        var datepart = $"({date})";
-                        var withdate = line.Replace("[DATE]", datepart);
-                        var cmd = $"({withdate}).toString()";
-                        try
+                        if (!string.IsNullOrWhiteSpace(line) && !line.StartsWith("//"))
                         {
-                            r1 = nil.Eval(cmd).As<string>();
-                        }
-                        catch (Exception e)
-                        {
-                            r1 = $"Exception: {e.Message}";
-                        }
+                            string r1, r2;
+                            var datepart = $"({date})";
+                            var withdate = line.Replace("[DATE]", datepart);
+                            var cmd = $"({withdate}).toString()";
+                            try
+                            {
+                                r1 = nil.Eval(cmd).As<string>();
+                            }
+                            catch (Exception e)
+                            {
+                                r1 = $"Exception: {e.Message}";
+                            }
 
-                        try
-                        {
-                            r2 = v8.Evaluate(cmd).ToString();
-                        }
-                        catch (Exception e)
-                        {
-                            r2 = $"Exception: {e.Message}";
-                        }
+                            try
+                            {
+                                r2 = v8.Evaluate(cmd).ToString();
+                            }
+                            catch (Exception e)
+                            {
+                                r2 = $"Exception: {e.Message}";
+                            }
 
-                        if (String.Compare(r1, r2) != 0)
-                        {
-                            BAD($"Difference: {withdate}, \n  NiL={r1} {ifdate(r1)}\n   v8={r2} {ifdate(r2)}");
-                        }
-                        else
-                        {
-                            GOOD($"{withdate}");
+                            if (String.Compare(r1, r2) != 0)
+                            {
+                                BAD($"Difference: {withdate}, \n  NiL={r1} {ifdate(r1)}\n   v8={r2} {ifdate(r2)}");
+                            }
+                            else
+                            {
+                                GOOD($"{withdate} - {r1}");
+                            }
                         }
                     }
                 }
@@ -83,7 +108,7 @@ namespace Comparisons
         {
             var orig = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.DarkGreen;
-            //Console.WriteLine(TICK + "   " + s);
+            Console.WriteLine(TICK + "   " + s);
             Console.ForegroundColor = orig;
         }
 

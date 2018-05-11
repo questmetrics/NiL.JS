@@ -31,7 +31,9 @@
 [DATE].setDate(15)
 [DATE].setMinutes(34)
 [DATE].setDate(31)
-
+[DATE].setTime(0)
+[DATE].setTime(1525898414436)
+    
 [DATE].setUTCMonth(5)
 [DATE].setUTCSeconds(55)
 [DATE].setUTCMilliseconds(555)

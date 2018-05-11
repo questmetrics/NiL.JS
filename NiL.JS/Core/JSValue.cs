@@ -161,6 +161,11 @@ namespace NiL.JS.Core
 
         [Hidden]
         public static JSValue Undefined { [Hidden] get { return undefined; } }
+        
+        /// <summary>
+        /// BUG: Why does the state of notExists swap back and forth on property fetches????
+        /// </summary>
+        
         [Hidden]
         public static JSValue NotExists
         {

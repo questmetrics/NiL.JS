@@ -17,6 +17,18 @@ namespace FunctionalTests
         }
 
         [TestMethod]
+        public void StringInterpolationAllowsFunctions()
+        {
+            var context = new Context();
+            var code = @"
+var funcs = (x) => `This returns ${x}`;
+funcs.sub('Fred');
+";
+            var stringValue = context.Eval(code);
+            Assert.AreEqual("This returns Fred", stringValue.Value);
+        }
+
+        [TestMethod]
         public void StringInterpolationAllowsSlashes()
         {
             var context = new Context();

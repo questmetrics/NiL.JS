@@ -85,6 +85,7 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <Compile Include="momentTests.cs" />
+    <Compile Include="MultithreadTests.cs" />
     <Compile Include="StringInterpolationTests.cs" />
     <Compile Include="MemberAlias.cs" />
     <Compile Include="JsFunfuzz.cs" />

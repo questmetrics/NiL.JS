@@ -22,7 +22,7 @@ namespace FunctionalTests
             var context = new Context();
             var code = @"
 var funcs = (x) => `This returns ${x}`;
-funcs.sub('Fred');
+funcs('Fred');
 ";
             var stringValue = context.Eval(code);
             Assert.AreEqual("This returns Fred", stringValue.Value);

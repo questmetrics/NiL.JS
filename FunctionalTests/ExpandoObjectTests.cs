@@ -1,14 +1,14 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using NUnit.Framework;
 using NiL.JS.Core;
 using System.Collections.Generic;
 using System.Dynamic;
 
 namespace FunctionalTests
 {
-    [TestClass]
+    [TestFixture]
     public class ExpandoObjectTests
     {
-        [TestMethod]
+        [Test]
         public void ReadPropertiesOfDynamicobject()
         {
             dynamic obj = new ExpandoObject();
@@ -22,7 +22,7 @@ namespace FunctionalTests
             Assert.AreEqual("value", value.Value);
         }
 
-        [TestMethod]
+        [Test]
         public void WritePropertiesOfDynamicobject()
         {
             dynamic obj = new ExpandoObject();
@@ -31,11 +31,11 @@ namespace FunctionalTests
 
             var value = context.Eval("obj.field = 'value'");
 
-            Assert.IsInstanceOfType(obj.field, typeof(string));
+            Assert.IsInstanceOf<string>(obj.field);
             Assert.AreEqual("value", obj.field);
         }
 
-        [TestMethod]
+        [Test]
         public void WritePropertiesOfDynamicobjectOverWith()
         {
             dynamic obj = new ExpandoObject();
@@ -45,11 +45,11 @@ namespace FunctionalTests
 
             var value = context.Eval("with(obj) field = 'value'");
 
-            Assert.IsInstanceOfType(obj.field, typeof(string));
+            Assert.IsInstanceOf<string>(obj.field);
             Assert.AreEqual("value", obj.field);
         }
 
-        [TestMethod]
+        [Test]
         public void WriteInsideWithoShouldNotCreateNewField()
         {
             dynamic obj = new ExpandoObject();

@@ -1,30 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NiL.JS.Core;
-using NiL.JS.Extensions;
+﻿using NiL.JS.Core;
+using NUnit.Framework;
 
 namespace IntegrationTests.BaseLibrary
 {
-    [TestClass]
+    [TestFixture]
     public class StringTests
     {
-        [TestInitializeAttribute]
+        [SetUp]
         public void TestInitialize()
         {
             new GlobalContext().ActivateInCurrentThread();
         }
 
-        [TestCleanup]
+        [TearDown]
         public void MyTestMethod()
         {
             Context.CurrentContext.GlobalContext.Deactivate();
         }
 
-        [TestMethod]
+        [Test]
         public void ReplaceWithRegexpAndReplacer()
         {
             var script = @"

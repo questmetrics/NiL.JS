@@ -4,13 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using NiL.JS;
 using NiL.JS.Core;
 
 namespace FunctionalTests
 {
-    [TestClass]
+    [TestFixture]
     public class UglifyJs
     {
         private static readonly string UglifyJsScriptPath = Environment.CurrentDirectory + "../../../../Tests/uglifyjs.js";
@@ -18,7 +18,7 @@ namespace FunctionalTests
         private Module _module;
         private GlobalContext _context;
 
-        [TestInitialize]
+        [SetUp]
         public void Initialize()
         {
             using (var file = new FileStream(UglifyJsScriptPath, FileMode.Open))
@@ -32,13 +32,13 @@ namespace FunctionalTests
             _module.Run();
         }
 
-        [TestCleanup]
+        [TearDown]
         public void Cleanup()
         {
             _context.Deactivate();
         }
 
-        [TestMethod]
+        [Test]
         public void UglifyJsShouldWorkCorrectly()
         {
             var myString =

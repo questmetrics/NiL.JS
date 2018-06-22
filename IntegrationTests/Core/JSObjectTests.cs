@@ -1,13 +1,13 @@
 ﻿using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using NiL.JS.Core;
 
 namespace IntegrationTests.Core
 {
-    [TestClass]
+    [TestFixture]
     public sealed class JSObjectTests
     {
-        [TestMethod]
+        [Test]
         public void EnumerationShouldNotIncludePropertiesFromPrototype()
         {
             var proto = JSObject.CreateObject();

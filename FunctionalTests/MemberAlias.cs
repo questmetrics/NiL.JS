@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using NiL.JS.BaseLibrary;
 using NiL.JS.Core;
 using System.Diagnostics;
@@ -10,10 +10,10 @@ using NiL.JS.Core.Interop;
 
 namespace FunctionalTests
 {
-    [TestClass]
+    [TestFixture]
     public class MemberAlias
     {
-        [TestMethod]
+        [Test]
         public void CreateInstanceOfGenericType()
         {
             var context = new Context();
@@ -39,7 +39,7 @@ namespace FunctionalTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void AliasForMember_ShouldChangePropertyName()
         {
             var context = new Context();
@@ -51,7 +51,7 @@ namespace FunctionalTests
             Assert.IsFalse((bool)NiL.JS.BaseLibrary.Array.includes(names, new Arguments { "NameForDotNetSide" }));
         }
 
-        [TestMethod]
+        [Test]
         public void AliasForMember_ShouldChangeNameOfFunction()
         {
             var context = new Context();
@@ -62,7 +62,7 @@ namespace FunctionalTests
             Assert.AreEqual("NameForJsSide", name);
         }
 
-        [TestMethod]
+        [Test]
         public void AliasForMember_ShouldProcessSymbolName()
         {
             var context = new Context();

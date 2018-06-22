@@ -1,4 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using NUnit.Framework;
 using NiL.JS.Core;
 using NiL.JS.Core.Interop;
 using NiL.JS.Extensions;
@@ -10,10 +10,10 @@ using System.Threading.Tasks;
 
 namespace FunctionalTests
 {
-    [TestClass]
+    [TestFixture]
     public sealed class ToStringTagTests
     {
-        [TestMethod]
+        [Test]
         public void JSObjectMastHaveObjectTag()
         {
             var context = new Context();
@@ -34,7 +34,7 @@ namespace FunctionalTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void ToStringTagShouldWorkForCustomObjects()
         {
             var context = new Context();
@@ -55,7 +55,7 @@ namespace FunctionalTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void ToStringShouldUseNameOfCustomObjectIfToStringTagNotDefined()
         {
             var context = new Context();
@@ -72,7 +72,7 @@ namespace FunctionalTests
         {
         }
 
-        [TestMethod]
+        [Test]
         public void ToStringTagShouldWorkForExternTypes()
         {
             var context = new Context();
@@ -88,7 +88,7 @@ namespace FunctionalTests
         {
         }
 
-        [TestMethod]
+        [Test]
         public void ToStringShouldUseNameOfTypeIfToStringTagNotDefined()
         {
             var context = new Context();
@@ -100,7 +100,7 @@ namespace FunctionalTests
             Assert.AreEqual($"[object {typeof(ExternTypeWithoutTag).Name}]", stringValue.Value);
         }
 
-        [TestMethod]
+        [Test]
         public void ToStringTagShouldBeSymbol()
         {
             var context = new Context();

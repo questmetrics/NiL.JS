@@ -1,13 +1,13 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using NiL.JS.Core;
 
 namespace IntegrationTests.Core
 {
-    [TestClass]
+    [TestFixture]
     public class ContextTests
     {
-        [TestMethod]
+        [Test]
         public void Eval_ThisBindShouldBeOverridable()
         {
             var context = new Context();
@@ -22,7 +22,7 @@ namespace IntegrationTests.Core
             Assert.AreEqual(oldThis, value1);
         }
 
-        [TestMethod]
+        [Test]
         public void ContextInNonStrictModeByDefault()
         {
             var context = new Context();
@@ -39,7 +39,7 @@ catch(e) {
             Assert.AreEqual(true, (bool)isStrict);
         }
 
-        [TestMethod]
+        [Test]
         public void ContextCanBeInStrictMode()
         {
             var context = new Context(true);

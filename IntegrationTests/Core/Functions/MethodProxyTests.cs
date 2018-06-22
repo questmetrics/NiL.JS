@@ -3,21 +3,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using NiL.JS.Core;
 
 namespace IntegrationTests.Core.Functions
 {
-    [TestClass]
+    [TestFixture]
     public class MethodProxyTests
     {
-        [TestInitializeAttribute]
+        [SetUp]
         public void TestInitialize()
         {
             new GlobalContext().ActivateInCurrentThread();
         }
 
-        [TestCleanup]
+        [TearDown]
         public void MyTestMethod()
         {
             Context.CurrentContext.GlobalContext.Deactivate();
@@ -28,7 +28,7 @@ namespace IntegrationTests.Core.Functions
             public string Text { get; set; }
         }
 
-        [TestMethod]
+        [Test]
         public void UndefinedToStringPropertyShouldConvertToNull()
         {
             var context = new Context();

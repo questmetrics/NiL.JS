@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using NiL.JS.Core;
 
 namespace FunctionalTests
 {
-    [TestClass]
+    [TestFixture]
     public sealed class OverloadedMethods
     {
         private class Class
@@ -29,7 +29,7 @@ namespace FunctionalTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void OverloadedMethods_0()
         {
             var context = new Context();
@@ -41,7 +41,7 @@ namespace FunctionalTests
             Assert.AreEqual(0, result.Value);
         }
 
-        [TestMethod]
+        [Test]
         public void OverloadedMethods_1()
         {
             var context = new Context();
@@ -53,7 +53,7 @@ namespace FunctionalTests
             Assert.AreEqual(1, result.Value);
         }
 
-        [TestMethod]
+        [Test]
         public void OverloadedMethods_2()
         {
             var context = new Context();

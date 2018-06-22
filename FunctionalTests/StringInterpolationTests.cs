@@ -1,12 +1,12 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using NUnit.Framework;
 using NiL.JS.Core;
 
 namespace FunctionalTests
 {
-    [TestClass]
+    [TestFixture]
     public sealed class StringInterpolationTests
     {
-        [TestMethod]
+        [Test]
         public void StringInterpolationAllowsStrings()
         {
             var context = new Context();
@@ -16,7 +16,7 @@ namespace FunctionalTests
             Assert.AreEqual("This is a string", stringValue.Value);
         }
 
-        [TestMethod]
+        [Test]
         public void StringInterpolationAllowsFunctions()
         {
             var context = new Context();
@@ -28,7 +28,7 @@ funcs('Fred');
             Assert.AreEqual("This returns Fred", stringValue.Value);
         }
 
-        [TestMethod]
+        [Test]
         public void StringInterpolationAllowsSlashes()
         {
             var context = new Context();
@@ -37,7 +37,7 @@ funcs('Fred');
             Assert.AreEqual("This is a string such as http://www.google.com", stringValue.Value);
         }
 
-        [TestMethod]
+        [Test]
         public void StringAllowsSlashes()
         {
             var context = new Context();
@@ -46,7 +46,7 @@ funcs('Fred');
             Assert.AreEqual("This is a string such as http://www.google.com", stringValue.Value);
         }
 
-        [TestMethod]
+        [Test]
         public void StringAllowsSlashesDoubleQuoted()
         {
             var context = new Context();
@@ -55,7 +55,7 @@ funcs('Fred');
             Assert.AreEqual("This is a string such as http://www.google.com", stringValue.Value);
         }
 
-        [TestMethod]
+        [Test]
         public void StringInterpolationAllowsSubstititions()
         {
             var context = new Context();

@@ -83,10 +83,9 @@ namespace NiL.JS.BaseLibrary
                 if (arg.Value == null)
                 {
                     _time = _unixTimeBase;
-                    _timeZoneOffset = getTimeZoneOffset(_time);
+                    _timeZoneOffset = 0;
                     return;
                 }
-
 
                 switch (arg._valueType)
                 {
@@ -1230,6 +1229,10 @@ namespace NiL.JS.BaseLibrary
             "yyyyMMddTHHmmsszzz",
             "yyyyMMddTHHmmsszz",
             // Extended formats
+            "yyyy-MM-ddTHH:mm:ss.fffZ",
+            "yyyy-MM-ddTHH:mm:ss.ffZ",
+            "yyyy-MM-ddTHH:mm:ss.fffzzz",
+            "yyyy-MM-ddTHH:mm:ss.ffzzz",
             "yyyy-MM-ddTHH:mm:sszzz",
             "yyyy-MM-ddTHH:mm:sszz",
             // All of the above with reduced accuracy

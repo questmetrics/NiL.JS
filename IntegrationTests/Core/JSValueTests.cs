@@ -1,25 +1,25 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using NiL.JS.Core;
 
 namespace IntegrationTests.Core
 {
-    [TestClass]
+    [TestFixture]
     public class JSValueTests
     {
-        [TestInitializeAttribute]
+        [SetUp]
         public void TestInitialize()
         {
             new GlobalContext().ActivateInCurrentThread();
         }
 
-        [TestCleanup]
+        [TearDown]
         public void MyTestMethod()
         {
             Context.CurrentContext.GlobalContext.Deactivate();
         }
 
-        [TestMethod]
+        [Test]
         public void PrimitiveTypeShouldBeWrappedAsClass()
         {
             var wrappedObject = JSValue.Wrap(1);
@@ -27,7 +27,7 @@ namespace IntegrationTests.Core
             Assert.AreEqual(JSValueType.Object, wrappedObject.ValueType);
         }
 
-        [TestMethod]
+        [Test]
         public void PrimitiveTypeShouldBeMarshaledAsPrimitive()
         {
             var wrappedObject = JSValue.Marshal(1);
@@ -44,7 +44,7 @@ namespace IntegrationTests.Core
             YetAnother = 4
         }
 
-        [TestMethod]
+        [Test]
         public void ShouldConvertStringToEnumValue()
         {
             var convertableJsString = JSValue.Marshal(nameof(TestEnum.Second)) as IConvertible;
@@ -54,7 +54,7 @@ namespace IntegrationTests.Core
             Assert.AreEqual(TestEnum.Second, enumValue);
         }
 
-        [TestMethod]
+        [Test]
         public void ShouldConvertNumberInStringToEnumValue()
         {
             var convertableJsString = JSValue.Marshal(((int)(TestEnum.Second)).ToString()) as IConvertible;
@@ -64,7 +64,7 @@ namespace IntegrationTests.Core
             Assert.AreEqual(TestEnum.Second, enumValue);
         }
 
-        [TestMethod]
+        [Test]
         public void ShouldConvertIntToEnumValue()
         {
             var convertableJsString = JSValue.Marshal((int)(TestEnum.Second)) as IConvertible;
@@ -74,7 +74,7 @@ namespace IntegrationTests.Core
             Assert.AreEqual(TestEnum.Second, enumValue);
         }
 
-        [TestMethod]
+        [Test]
         public void ShouldReturnNullIfCannotConvert()
         {
             var convertableJsString = JSValue.Marshal("bazinga!") as IConvertible;

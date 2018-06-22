@@ -1,21 +1,19 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System;
+using System.Threading;
 using NiL.JS.Core;
+using NUnit.Framework;
 
 namespace IntegrationTests.BaseLibrary
 {
-    [TestClass]
+    [TestFixture]
     public sealed class JsonTests
     {
-        [TestMethod]
-        [ExpectedException(typeof(JSException))]
+        [TestCase]
         [Timeout(1000)]
         public void IncorrectJsonShouldBringToError()
         {
             string json = "\"a\":0";
-
-            NiL.JS.BaseLibrary.JSON.parse(json);
-
-            Assert.Fail();
+            Assert.Throws<JSException>(() => NiL.JS.BaseLibrary.JSON.parse(json));
         }
     }
 }

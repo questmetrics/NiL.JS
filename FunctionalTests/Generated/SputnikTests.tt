@@ -11,7 +11,7 @@
 	var staPath = testsRoot + "sta.js";
 	var chapters = Directory.EnumerateDirectories(sputnikTests);
 #>
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 namespace NiL.JS.Test.Generated
 {
@@ -19,10 +19,10 @@ namespace NiL.JS.Test.Generated
 	{
 		var files = Directory.EnumerateFiles(chapter, "*.js", SearchOption.AllDirectories);
 
-		#>	[TestClass]
+		#>	[TestFixture]
 	public sealed class SputnikTests_<#= chapter.Split('/').Last() #> : FileTestBase
 	{	
-		[TestInitialize]
+		[SetUp]
 		public void Initialize() => LoadSta("<#= staPath #>");
 <#
 		var tests = new HashSet<string>();
@@ -50,10 +50,10 @@ namespace NiL.JS.Test.Generated
 			if (desc.Contains("* @ignore")) 
 			{#>
 
-		[Ignore]<#
+		[Ignore("ignored")]<#
 			}
 #>	
-		[TestMethod]
+		[Test]
 #line 1 "<#= file.Replace('\\','/') #>"
 		public void <#= testName #>() => RunFile("<#= file.Replace('\\','/') #>");
 <#

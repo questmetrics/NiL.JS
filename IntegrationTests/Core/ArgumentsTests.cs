@@ -1,14 +1,14 @@
 ﻿using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using NiL.JS.BaseLibrary;
 using NiL.JS.Core;
 
 namespace IntegrationTests.Core
 {
-    [TestClass]
+    [TestFixture]
     public class ArgumentsTests
     {
-        [TestMethod]
+        [Test]
         public void ValuesEnumeration()
         {
             Assert.AreEqual(1, new Arguments { Number.POSITIVE_INFINITY }.Count());

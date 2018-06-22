@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using NiL.JS.BaseLibrary;
 using NiL.JS.Core;
 using System.Collections;
@@ -7,10 +7,10 @@ using System;
 
 namespace IntegrationTests.Core
 {
-    [TestClass]
+    [TestFixture]
     public class ToolsTests
     {
-        [TestMethod]
+        [Test]
         public void LongNumberShouldParsedCorrectly()
         {
             var numbers = new KeyValuePair<double, string>[]
@@ -45,7 +45,7 @@ namespace IntegrationTests.Core
             }
         }
 
-        [TestMethod]
+        [Test]
         public void FormatArgsTest()
         {
             Context c = new Context();

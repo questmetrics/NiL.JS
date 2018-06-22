@@ -1,13 +1,13 @@
 ﻿using System;
 using System.IO;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using NiL.JS;
 using NiL.JS.Core;
 
 namespace FunctionalTests
 {
-    [TestClass]
+    [TestFixture]
     public class JsFunfuzz
     {
         private static readonly string JsFunfuzzScriptPath = Environment.CurrentDirectory + "../../../../Tests/jsfunfuzz.js";
@@ -18,7 +18,7 @@ namespace FunctionalTests
         private TextWriter _oldErrOutput;
         private GlobalContext _context;
 
-        [TestInitialize]
+        [SetUp]
         public void Initialize()
         {
             _context = new GlobalContext();
@@ -43,7 +43,7 @@ namespace FunctionalTests
             Console.SetError(new StringWriter(_output));
         }
 
-        [TestCleanup]
+        [TearDown]
         public void Cleanup()
         {
             _context.Deactivate();
@@ -52,7 +52,7 @@ namespace FunctionalTests
             Console.SetError(_oldErrOutput);
         }
 
-        [TestMethod]
+        [Test]
         public void AsRhino()
         {
             _module.Context.DefineVariable("stderr").Assign(JSValue.Null);
@@ -63,7 +63,7 @@ namespace FunctionalTests
             Assert.AreEqual("", _output.ToString());
         }
 
-        [TestMethod]
+        [Test]
         public void AsJavaScriptCore()
         {
             _module.Context.DefineVariable("print").Assign(new Action<object>(x => _output.AppendLine(x.ToString())));
@@ -78,7 +78,7 @@ Targeting JavaScriptCore / WebKit.
             Assert.AreEqual(expected, _output.ToString());
         }
 
-        [TestMethod]
+        [Test]
         public void AsSpiderMonkey()
         {
             _module.Context.DefineVariable("print").Assign(new Action<object>(x => _output.AppendLine(x.ToString())));

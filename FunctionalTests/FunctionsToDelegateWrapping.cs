@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using NiL.JS.Core;
 
 namespace FunctionalTests
 {
-    [TestClass]
+    [TestFixture]
     public class FunctionsToDelegateWrapping
     {
-        [TestMethod]
+        [Test]
         public void TryToAddFunctionIntoListOfDelegates_Marshal()
         {
             var context = new Context();
@@ -23,7 +23,7 @@ namespace FunctionalTests
             Assert.AreEqual("hi Test", list[0]("Test"));
         }
 
-        [TestMethod]
+        [Test]
         public void TryToAddFunctionIntoListOfDelegates_Wrap()
         {
             var context = new Context();

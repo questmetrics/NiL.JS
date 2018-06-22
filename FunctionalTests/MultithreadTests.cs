@@ -2,20 +2,20 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using NiL.JS;
 using NiL.JS.Core;
 using NiL.JS.Extensions;
 
 namespace FunctionalTests
 {
-    [TestClass]
+    [TestFixture]
     public sealed class MultiThreadTests
     {
 
         GlobalContext gctx;
 
-        [TestMethod]
+        [Test]
         public void TestParallelThreads()
         {
             gctx = new GlobalContext("Shared");

@@ -1,14 +1,14 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using NUnit.Framework;
 using NiL.JS.BaseLibrary;
 using NiL.JS.Core;
 using System.Linq;
 
 namespace FunctionalTests
 {
-    [TestClass]
+    [TestFixture]
     public class Bug_106
     {
-        [TestMethod]
+        [Test]
         public void SetField91()
         {
             var oo = JSObject.CreateObject();
@@ -16,7 +16,7 @@ namespace FunctionalTests
             oo["test"] = false;
             var ro = SetField91_p(oo, "+1", 1);
 
-            Assert.AreEqual<int>(1, (int)ro["+1"]);  // pass
+            Assert.AreEqual(1, (int)ro["+1"]);  // pass
 
             bool pass = false;
             foreach (var kv in ro)

@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NiL.JS;
+using NUnit.Framework;
 using NiL.JS.Core;
+using Module = NiL.JS.Module;
 
 namespace IntegrationTests
 {
-    [TestClass]
+    [TestFixture]
     public class ModuleTests
     {
-        [TestMethod]
+        [Test]
         public void ModuleWithEmptyCodeShouldCreateContext()
         {
             var module = new Module("");
@@ -18,7 +19,7 @@ namespace IntegrationTests
             Assert.IsNotNull(module.Context);
         }
 
-        [TestMethod]
+        [Test]
         public void ExportOperatorShouldAddItemToExportTable()
         {
             var module = new Module("export var a = 0x777;");
@@ -29,7 +30,9 @@ namespace IntegrationTests
             Assert.AreEqual(0x777, module.Exports["a"].Value);
         }
 
-        [TestMethod]
+        //TODO: Reinstantiate this
+/*
+        [Test]
         public void ImportOperatorShouldImportItem()
         {
             var module1 = new Module("");
@@ -46,8 +49,24 @@ namespace IntegrationTests
 
             Assert.AreEqual(0x777, module2.Context.GetVariable("a").Value);
         }
+*/
 
-        [TestMethod]
+        private MethodInfo GetMethod(object objectUnderTest, string methodName)
+        {
+            if (string.IsNullOrWhiteSpace(methodName))
+                Assert.Fail("methodName cannot be null or whitespace");
+
+            var method = objectUnderTest.GetType()
+                .GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance);
+
+            if (method == null)
+                Assert.Fail(string.Format("{0} method not found", methodName));
+
+            return method;
+        }
+        
+        
+        [Test]
         [Timeout(2000)]
         public void ExecutionWithTimeout()
         {
@@ -67,7 +86,7 @@ namespace IntegrationTests
             Assert.AreEqual(1, Math.Round(stopWatch.Elapsed.TotalSeconds));
         }
 
-        [TestMethod]
+        [Test]
         [Timeout(2000)]
         public void ExecutionWithTimeout_ExceptionShouldNotBeCaughtByTryCatch()
         {

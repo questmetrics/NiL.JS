@@ -6,11 +6,11 @@
 <#@ output extension=".cs" #>
 using System.IO;
 using System.Reflection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 namespace NiL.JS.Test.Generated
 {
-	[TestClass]
+	[TestFixture]
 	public sealed class EmbeddedTests : FileTestBase
 	{<#	
 		var projectParent = Directory.GetParent(Host.TemplateFile).Parent;
@@ -21,7 +21,7 @@ namespace NiL.JS.Test.Generated
 			var resourceName = testName.Substring(testsRoot.Length + 1).Replace('\\', '.').Replace('/', '.');
 #>
 
-		[TestMethod]
+		[Test]
 #line 1 "<#= testName #>"
 		public void <#= resourceName.Replace("\\","/").Split('/').Last().Replace(' ', '_').Replace('.', '_').Replace('(', '_').Replace(')', '_') #>() => RunFile(@"<#= testName #>");
    <#}
